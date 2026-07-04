@@ -47,3 +47,63 @@ h1 {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+
+.now-height {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.trend {
+  font-size: 1rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.curve {
+  width: 100%;
+  height: auto;
+  margin-top: 1rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 1.5rem 0 0.75rem;
+}
+
+.beach h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.badge.ok {
+  background: #1d5c3f;
+  color: #a6f0c6;
+}
+
+.badge.no {
+  background: #5c2b2b;
+  color: #f0c2c2;
+}
+
+.footnote {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 2rem;
+}

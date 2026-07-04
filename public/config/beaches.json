@@ -1,0 +1,26 @@
+{
+  "default_swim_threshold_m": 3.0,
+  "beaches": [
+    {
+      "id": "concurrence",
+      "name": "Plage de la Concurrence",
+      "station": "la-rochelle-pallice",
+      "swim_threshold_m": 3.0,
+      "swimmable_at_low_tide": false
+    },
+    {
+      "id": "minimes",
+      "name": "Plage des Minimes",
+      "station": "la-rochelle-pallice",
+      "swim_threshold_m": 3.0,
+      "swimmable_at_low_tide": false
+    },
+    {
+      "id": "chef-de-baie",
+      "name": "Plage de Chef de Baie",
+      "station": "la-rochelle-pallice",
+      "swim_threshold_m": 3.0,
+      "swimmable_at_low_tide": true
+    }
+  ]
+}

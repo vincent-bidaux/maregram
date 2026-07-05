@@ -1,9 +1,10 @@
 :root {
-  --bg: #0b1e2d;
+  --bg: #0a1622;
   --surface: #122c40;
-  --accent: #4fb8de;
+  --accent: #5ec4ea;
   --text: #eaf4f9;
-  --muted: #7ea3b8;
+  --muted: #82a6ba;
+  --now-dot: #e2554f;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: dark;
 }
@@ -32,15 +33,37 @@ h1 {
 
 .subtitle {
   color: var(--muted);
-  margin-top: 0;
+  margin-top: 0.75rem;
   margin-bottom: 2rem;
+  font-size: 0.8rem;
 }
 
 .card {
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 1.25rem;
   margin-bottom: 1rem;
+}
+
+.hero-card {
+  background: linear-gradient(160deg, #234b68 0%, #14304a 45%, #0d2138 100%);
+  border-radius: 28px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.6);
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.date-big {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.1rem 0 0.9rem;
+  letter-spacing: -0.01em;
 }
 
 .status {
@@ -69,7 +92,92 @@ h1 {
 .curve {
   width: 100%;
   height: auto;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
+  overflow: visible;
+}
+
+.curve .day-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.curve .tide-time {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.curve .tide-height {
+  fill: var(--muted);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.tide-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 480px) {
+  .tide-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tide-item-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+}
+
+.tide-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.tide-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tide-arrow.high {
+  background: rgba(94, 196, 234, 0.18);
+  color: var(--accent);
+}
+
+.tide-arrow.low {
+  background: rgba(130, 166, 186, 0.18);
+  color: var(--muted);
+}
+
+.tide-item-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.tide-item-time {
+  font-weight: 600;
+}
+
+.tide-item-height {
+  color: var(--muted);
 }
 
 h2 {

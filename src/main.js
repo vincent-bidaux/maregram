@@ -17,6 +17,13 @@ const fmtTime = (d) =>
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
 const fmtHeight = (h) => `${h.toFixed(2)} m`;
+const fmtDayLabel = (d, today) => {
+  const isToday = d.toDateString() === today.toDateString();
+  const isTomorrow = d.toDateString() === new Date(today.getTime() + 86400000).toDateString();
+  if (isToday) return "Aujourd'hui";
+  if (isTomorrow) return "Demain";
+  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+};
 
 function trendLabel(levels, now) {
   const idx = levels.findIndex((p) => new Date(p.time) > now);
@@ -25,41 +32,121 @@ function trendLabel(levels, now) {
   return rising ? "montante ↗" : "descendante ↘";
 }
 
-function curveSvg(levels, now) {
+/**
+ * Courbe SVG sur 2 jours : sections visuelles par jour, pics/creux annotés
+ * (heure + hauteur), et un marqueur rouge pour l'instant présent.
+ */
+function curveSvg(levels, tides, now) {
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart.getTime() + 2 * 24 * 3600 * 1000);
+  const NB_DAYS = 2;
+  const windowEnd = new Date(dayStart.getTime() + NB_DAYS * 24 * 3600 * 1000);
+
   const points = levels.filter((p) => {
     const t = new Date(p.time);
-    return t >= dayStart && t <= dayEnd;
+    return t >= dayStart && t <= windowEnd;
   });
   if (points.length < 2) return "";
 
   const w = 640;
-  const h = 140;
-  const pad = 6;
+  const h = 200;
+  const padX = 10;
+  const topLabelBand = 46; // place pour les libellés des pleines mers
+  const bottomLabelBand = 46; // place pour les libellés des basses mers
   const heights = points.map((p) => p.height);
   const minH = Math.min(...heights);
   const maxH = Math.max(...heights);
-  const t0 = new Date(points[0].time).getTime();
-  const t1 = new Date(points[points.length - 1].time).getTime();
+  const t0 = dayStart.getTime();
+  const t1 = windowEnd.getTime();
 
-  const x = (t) => pad + ((t - t0) / (t1 - t0)) * (w - 2 * pad);
-  const y = (v) => h - pad - ((v - minH) / (maxH - minH || 1)) * (h - 2 * pad);
+  const x = (t) => padX + ((t - t0) / (t1 - t0)) * (w - 2 * padX);
+  const y = (v) =>
+    h - bottomLabelBand - ((v - minH) / (maxH - minH || 1)) * (h - topLabelBand - bottomLabelBand);
 
   const path = points
     .map((p, i) => `${i === 0 ? "M" : "L"} ${x(new Date(p.time).getTime()).toFixed(1)} ${y(p.height).toFixed(1)}`)
     .join(" ");
 
+  // Sections par jour : bande alternée + libellé + séparateur
+  let daySections = "";
+  for (let i = 0; i < NB_DAYS; i++) {
+    const d0 = new Date(dayStart.getTime() + i * 86400000);
+    const d1 = new Date(dayStart.getTime() + (i + 1) * 86400000);
+    const bx0 = x(d0.getTime());
+    const bx1 = x(d1.getTime());
+    if (i % 2 === 1) {
+      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${(bx1 - bx0).toFixed(1)}" height="${h}" fill="rgba(255,255,255,0.03)" />`;
+    }
+    if (i > 0) {
+      daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
+    }
+    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${fmtDayLabel(d0, dayStart)}</text>`;
+  }
+
+  // Libellés des pleines/basses mers visibles dans la fenêtre
+  let tideLabels = "";
+  for (const e of tides) {
+    const t = new Date(e.time);
+    if (t < dayStart || t > windowEnd) continue;
+    const ex = x(t.getTime());
+    const ey = y(e.height);
+    const time = fmtTime(e.time);
+    const height = e.height.toFixed(2);
+    if (e.type === "high") {
+      tideLabels += `
+        <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3.5" fill="var(--accent)" />
+        <text x="${ex.toFixed(1)}" y="${(ey - 26).toFixed(1)}" class="tide-time">${time}</text>
+        <text x="${ex.toFixed(1)}" y="${(ey - 12).toFixed(1)}" class="tide-height">${height}</text>
+      `;
+    } else {
+      tideLabels += `
+        <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3.5" fill="var(--accent)" />
+        <text x="${ex.toFixed(1)}" y="${(ey + 18).toFixed(1)}" class="tide-height">${height}</text>
+        <text x="${ex.toFixed(1)}" y="${(ey + 32).toFixed(1)}" class="tide-time">${time}</text>
+      `;
+    }
+  }
+
+  const nowPoint = findCurrentLevel(points, now) || points[0];
   const nowX = x(now.getTime());
-  const nowClamped = Math.max(pad, Math.min(w - pad, nowX));
+  const nowY = y(nowPoint.height);
+  const nowClamped = Math.max(padX, Math.min(w - padX, nowX));
 
   return `
     <svg viewBox="0 0 ${w} ${h}" class="curve">
-      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" />
-      <line x1="${nowClamped}" y1="0" x2="${nowClamped}" y2="${h}" stroke="var(--muted)" stroke-dasharray="4 3" />
+      ${daySections}
+      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
+      ${tideLabels}
+      <circle cx="${nowClamped.toFixed(1)}" cy="${nowY.toFixed(1)}" r="5.5" fill="#e2554f" stroke="#0b1e2d" stroke-width="2" />
     </svg>
   `;
+}
+
+function tideListRow(tides, now) {
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart.getTime() + 86400000);
+  const todays = tides.filter((e) => {
+    const t = new Date(e.time);
+    return t >= dayStart && t < dayEnd;
+  });
+  if (!todays.length) return "";
+
+  const items = todays
+    .map(
+      (e) => `
+        <div class="tide-item">
+          <span class="tide-arrow ${e.type}">${e.type === "high" ? "↑" : "↓"}</span>
+          <span class="tide-item-text">
+            <span class="tide-item-time">${fmtTime(e.time)}</span>
+            <span class="tide-item-height">${e.height.toFixed(2)} m</span>
+          </span>
+        </div>
+      `
+    )
+    .join("");
+
+  return `<div class="tide-list">${items}</div>`;
 }
 
 function beachStatus(beach, levels, now) {
@@ -113,17 +200,18 @@ async function render() {
       .join("");
 
     app.innerHTML = `
-      <h1>Marées — La Rochelle</h1>
-      <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
-
-      <div class="card">
+      <div class="hero-card">
+        <p class="eyebrow">Aujourd'hui</p>
+        <h1 class="date-big">${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</h1>
         <p class="now-height">${current ? fmtHeight(current.height) : "—"} <span class="trend">${current ? trendLabel(levels, now) : ""}</span></p>
         <p class="meta">
           ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
           ${nextEvents[0] ? ` · Prochaine ${nextEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
-        ${curveSvg(levels, now)}
+        ${curveSvg(levels, tides, now)}
+        ${tideListRow(tides, now)}
       </div>
+      <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
 
       <h2>Baignade par plage</h2>
       ${beachesHtml}

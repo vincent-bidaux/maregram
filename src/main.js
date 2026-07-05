@@ -76,11 +76,22 @@ function beachStatus(beach, levels, now) {
     statusHtml = `<span class="badge no">Pas de créneau à venir dans les données chargées</span>`;
   }
 
+  const wq = beach.water_quality;
+  const wqClass = wq?.latest_classification?.split(" ")[0] || "";
+  const wqBadgeClass = { excellent: "ok", bon: "ok", suffisant: "warn", insuffisant: "no" }[wqClass] || "";
+
+  const hazardsHtml = beach.hazards?.length
+    ? `<p class="meta hazards">⚠ ${beach.hazards.join(" · ")}</p>`
+    : "";
+
   return `
     <div class="card beach">
       <h3>${beach.name}</h3>
       <p class="status">${statusHtml}</p>
       <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}${beach.swimmable_at_low_tide ? " · baignable même à marée basse" : ""}</p>
+      <p class="meta">Surveillance : ${beach.surveillance?.months || "?"}, ${beach.surveillance?.hours || "?"}</p>
+      ${wq ? `<p class="meta">Qualité de l'eau : <span class="badge ${wqBadgeClass}">${wq.latest_classification}</span></p>` : ""}
+      ${hazardsHtml}
     </div>
   `;
 }

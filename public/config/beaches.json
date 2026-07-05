@@ -1,26 +1,100 @@
 {
   "default_swim_threshold_m": 3.0,
+  "swim_threshold_disclaimer": "Aucun seuil officiel de hauteur d'eau pour la baignade n'est publié par une source officielle (SHOM, mairie, ARS). C'est une estimation empirique à ajuster après relevés sur place.",
   "beaches": [
     {
       "id": "concurrence",
       "name": "Plage de la Concurrence",
       "station": "la-rochelle-pallice",
       "swim_threshold_m": 3.0,
-      "swimmable_at_low_tide": false
+      "swimmable_at_low_tide": false,
+      "surveillance": {
+        "months": "juillet-août",
+        "hours": "11h-19h",
+        "phone": "05 46 41 27 80",
+        "exact_2026_dates": null,
+        "source": "https://www.larochelle.fr/action-municipale/ville-durable/nature-en-ville/plages",
+        "note": "Dates précises de début/fin de saison 2026 non publiées en ligne à ce jour ; horaires 11h-19h confirmés pour juillet-août."
+      },
+      "water_quality": {
+        "site_code": "017000613",
+        "latest_classification": "suffisant (2025)",
+        "history": { "2022": "bon", "2023": "insuffisant", "2024": "insuffisant", "2025": "suffisant" },
+        "risk_note": "Plage urbaine : le bassin versant pluvial qui aboutit dans la baie couvre environ 50% de la ville, risque de pollution accru après la pluie. Surveillance renforcée pluie/marée avec fermetures préventives possibles.",
+        "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000613"
+      },
+      "paddle_sup": {
+        "allowed_in_swim_zone": false,
+        "note": "SUP/kayak/engins non immatriculés interdits dans la zone de baignade balisée pendant les heures de surveillance (règle générale des 300m). Détail de l'arrêté municipal par plage à vérifier en mairie."
+      },
+      "hazards": ["Retrait de la mer sur plusieurs centaines de mètres à marée basse, baignade impossible"]
     },
     {
       "id": "minimes",
       "name": "Plage des Minimes",
       "station": "la-rochelle-pallice",
       "swim_threshold_m": 3.0,
-      "swimmable_at_low_tide": false
+      "swimmable_at_low_tide": false,
+      "surveillance": {
+        "months": "juillet-août",
+        "hours": "11h-19h",
+        "phone": "05 46 44 47 79",
+        "exact_2026_dates": null,
+        "source": "https://www.larochelle.fr/action-municipale/ville-durable/nature-en-ville/plages",
+        "note": "Dates précises de début/fin de saison 2026 non publiées en ligne à ce jour. La partie ouest de la plage (vers Stella Maris) n'est PAS surveillée."
+      },
+      "water_quality": {
+        "site_code": "017000585",
+        "latest_classification": "bon (2025)",
+        "history": { "2022": "excellent", "2023": "bon", "2024": "bon", "2025": "bon" },
+        "risk_note": null,
+        "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000585"
+      },
+      "paddle_sup": {
+        "allowed_in_swim_zone": false,
+        "note": "SUP/kayak/engins non immatriculés interdits dans la zone de baignade balisée pendant les heures de surveillance (règle générale des 300m)."
+      },
+      "hazards": [
+        "Rochers à fleur d'eau et manque de sable à marée basse",
+        "Partie ouest (vers Stella Maris) non surveillée, baignade dangereuse à cause des rochers"
+      ]
     },
     {
       "id": "chef-de-baie",
       "name": "Plage de Chef de Baie",
       "station": "la-rochelle-pallice",
       "swim_threshold_m": 3.0,
-      "swimmable_at_low_tide": true
+      "swimmable_at_low_tide": true,
+      "surveillance": {
+        "months": "juillet-août",
+        "hours": "11h-19h",
+        "phone": "05 46 43 37 38",
+        "exact_2026_dates": null,
+        "source": "https://www.larochelle.fr/action-municipale/ville-durable/nature-en-ville/plages",
+        "note": "Dates précises de début/fin de saison 2026 non publiées en ligne à ce jour ; poste de secours SNSM sur place."
+      },
+      "water_quality": {
+        "site_code": "017000584",
+        "latest_classification": "excellent (2024)",
+        "history": { "2022": "excellent", "2023": "excellent", "2024": "excellent" },
+        "risk_note": null,
+        "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000584"
+      },
+      "paddle_sup": {
+        "allowed_in_swim_zone": false,
+        "note": "SUP/kayak/engins non immatriculés interdits dans la zone de baignade balisée pendant les heures de surveillance (règle générale des 300m)."
+      },
+      "hazards": []
     }
-  ]
+  ],
+  "regional_context": {
+    "baines_alert": "Alertes régionales 'baïnes' (courants dangereux entre bancs de sable) émises par la préfecture de Nouvelle-Aquitaine en cas de risque maximal (ex : 29 juin-1er juillet 2026). Les 5 communes les plus citées comme exposées sont sur Oléron et la côte landaise/girondine, pas directement les 3 plages de La Rochelle intra-muros, mais à surveiller en général l'été.",
+    "flags": {
+      "vert": "baignade surveillée, pas de danger apparent",
+      "jaune": "baignade surveillée, danger limité ou marqué (remplace l'ancien drapeau orange)",
+      "rouge": "baignade interdite",
+      "violet": "pollution de l'eau ou espèces aquatiques dangereuses (méduses) - existe depuis mars 2022, peut se cumuler avec un autre drapeau",
+      "damier_noir_blanc": "zone de pratique nautique, baignade autorisée mais risquée"
+    }
+  }
 }

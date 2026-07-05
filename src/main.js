@@ -32,63 +32,62 @@ function trendLabel(levels, now) {
   return rising ? "montante ↗" : "descendante ↘";
 }
 
+const PX_PER_DAY = 320;
+const CURVE_H = 200;
+
 /**
- * Courbe SVG sur 2 jours : sections visuelles par jour, pics/creux annotés
- * (heure + hauteur), et un marqueur rouge pour l'instant présent.
+ * Courbe SVG sur toute la période chargée : sections visuelles par jour,
+ * pics/creux annotés (heure + hauteur), lignes de seuil par plage, et un
+ * marqueur rouge pour l'instant présent. Rendu en pixels réels (pas de
+ * viewBox mise à l'échelle) pour être placé dans un conteneur scrollable.
  */
 function curveSvg(levels, tides, now, beaches = []) {
-  const dayStart = new Date(now);
-  dayStart.setHours(0, 0, 0, 0);
-  const NB_DAYS = 2;
-  const windowEnd = new Date(dayStart.getTime() + NB_DAYS * 24 * 3600 * 1000);
+  if (levels.length < 2) return { html: "", totalWidth: 0, todayX: 0 };
 
-  const points = levels.filter((p) => {
-    const t = new Date(p.time);
-    return t >= dayStart && t <= windowEnd;
-  });
-  if (points.length < 2) return "";
+  const rangeStart = new Date(levels[0].time);
+  rangeStart.setHours(0, 0, 0, 0);
+  const lastPointDate = new Date(levels[levels.length - 1].time);
+  const rangeEnd = new Date(lastPointDate);
+  rangeEnd.setHours(0, 0, 0, 0);
+  rangeEnd.setDate(rangeEnd.getDate() + 1);
+  const nbDays = Math.round((rangeEnd - rangeStart) / 86400000);
 
-  const w = 640;
-  const h = 200;
-  const padX = 10;
-  const topLabelBand = 46; // place pour les libellés des pleines mers
-  const bottomLabelBand = 46; // place pour les libellés des basses mers
-  const heights = points.map((p) => p.height);
+  const w = nbDays * PX_PER_DAY;
+  const h = CURVE_H;
+  const topLabelBand = 46;
+  const bottomLabelBand = 46;
+  const heights = levels.map((p) => p.height);
   const thresholds = beaches.map((b) => b.swim_threshold_m);
   const minH = Math.min(...heights, ...thresholds);
   const maxH = Math.max(...heights, ...thresholds);
-  const t0 = dayStart.getTime();
-  const t1 = windowEnd.getTime();
+  const t0 = rangeStart.getTime();
 
-  const x = (t) => padX + ((t - t0) / (t1 - t0)) * (w - 2 * padX);
+  const x = (t) => ((t - t0) / 86400000) * PX_PER_DAY;
   const y = (v) =>
     h - bottomLabelBand - ((v - minH) / (maxH - minH || 1)) * (h - topLabelBand - bottomLabelBand);
 
-  const path = points
+  const path = levels
     .map((p, i) => `${i === 0 ? "M" : "L"} ${x(new Date(p.time).getTime()).toFixed(1)} ${y(p.height).toFixed(1)}`)
     .join(" ");
 
   // Sections par jour : bande alternée + libellé + séparateur
   let daySections = "";
-  for (let i = 0; i < NB_DAYS; i++) {
-    const d0 = new Date(dayStart.getTime() + i * 86400000);
-    const d1 = new Date(dayStart.getTime() + (i + 1) * 86400000);
+  for (let i = 0; i < nbDays; i++) {
+    const d0 = new Date(rangeStart.getTime() + i * 86400000);
     const bx0 = x(d0.getTime());
-    const bx1 = x(d1.getTime());
     if (i % 2 === 1) {
-      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${(bx1 - bx0).toFixed(1)}" height="${h}" fill="rgba(255,255,255,0.03)" />`;
+      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${PX_PER_DAY}" height="${h}" fill="rgba(255,255,255,0.03)" />`;
     }
     if (i > 0) {
       daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
-    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${fmtDayLabel(d0, dayStart)}</text>`;
+    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${fmtDayLabel(d0, now)}</text>`;
   }
 
-  // Libellés des pleines/basses mers visibles dans la fenêtre
+  // Libellés de toutes les pleines/basses mers
   let tideLabels = "";
   for (const e of tides) {
     const t = new Date(e.time);
-    if (t < dayStart || t > windowEnd) continue;
     const ex = x(t.getTime());
     const ey = y(e.height);
     const time = fmtTime(e.time);
@@ -108,44 +107,49 @@ function curveSvg(levels, tides, now, beaches = []) {
     }
   }
 
-  const nowPoint = findCurrentLevel(points, now) || points[0];
+  const nowPoint = findCurrentLevel(levels, now) || levels[0];
   const nowX = x(now.getTime());
   const nowY = y(nowPoint.height);
-  const nowClamped = Math.max(padX, Math.min(w - padX, nowX));
 
   const thresholdLines = beaches
     .map((b) => {
       const ty = y(b.swim_threshold_m);
-      return `<line x1="${padX}" y1="${ty.toFixed(1)}" x2="${w - padX}" y2="${ty.toFixed(1)}" stroke="${b.color}" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.85" />`;
+      return `<line x1="0" y1="${ty.toFixed(1)}" x2="${w}" y2="${ty.toFixed(1)}" stroke="${b.color}" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.85" />`;
     })
     .join("");
 
-  const legend = beaches.length
-    ? `
-      <div class="threshold-legend">
-        ${beaches
-          .map(
-            (b) => `
-              <span class="legend-item">
-                <span class="legend-dot" style="background:${b.color}"></span>
-                ${b.name} (${b.swim_threshold_m.toFixed(2)} m)
-              </span>
-            `
-          )
-          .join("")}
-      </div>
-    `
-    : "";
-
-  return `
-    <svg viewBox="0 0 ${w} ${h}" class="curve">
+  const html = `
+    <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" class="curve">
       ${daySections}
       ${thresholdLines}
       <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
       ${tideLabels}
-      <circle cx="${nowClamped.toFixed(1)}" cy="${nowY.toFixed(1)}" r="5.5" fill="#e2554f" stroke="#0b1e2d" stroke-width="2" />
+      <circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="5.5" fill="#e2554f" stroke="#0b1e2d" stroke-width="2" />
     </svg>
-    ${legend}
+  `;
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayX = x(todayStart.getTime());
+
+  return { html, totalWidth: w, todayX };
+}
+
+function legendHtml(beaches) {
+  if (!beaches.length) return "";
+  return `
+    <div class="threshold-legend">
+      ${beaches
+        .map(
+          (b) => `
+            <span class="legend-item">
+              <span class="legend-dot" style="background:${b.color}"></span>
+              ${b.name} (${b.swim_threshold_m.toFixed(2)} m)
+            </span>
+          `
+        )
+        .join("")}
+    </div>
   `;
 }
 
@@ -226,6 +230,8 @@ async function render() {
       .map((b) => beachStatus(b, levels, now))
       .join("");
 
+    const curve = curveSvg(levels, tides, now, beachesConfig.beaches);
+
     app.innerHTML = `
       <div class="hero-card">
         <p class="eyebrow">Aujourd'hui</p>
@@ -235,7 +241,15 @@ async function render() {
           ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
           ${nextEvents[0] ? ` · Prochaine ${nextEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
-        ${curveSvg(levels, tides, now, beachesConfig.beaches)}
+        <div class="curve-wrap">
+          <button class="curve-arrow prev" aria-label="Jour précédent" type="button">‹</button>
+          <div class="curve-scroll" data-today-x="${curve.todayX}" data-px-per-day="${PX_PER_DAY}">
+            ${curve.html}
+          </div>
+          <button class="curve-arrow next" aria-label="Jour suivant" type="button">›</button>
+          <button class="today-btn" type="button" hidden>Aujourd'hui</button>
+        </div>
+        ${legendHtml(beachesConfig.beaches)}
         ${tideListRow(tides, now)}
       </div>
       <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
@@ -245,12 +259,39 @@ async function render() {
 
       <p class="footnote">${meta.attribution}</p>
     `;
+
+    setupCurveScroll();
   } catch (err) {
     app.innerHTML = `
       <h1>Marées — La Rochelle</h1>
       <div class="card"><p class="status">Erreur de chargement : ${err.message}</p></div>
     `;
   }
+}
+
+function setupCurveScroll() {
+  const scrollEl = app.querySelector(".curve-scroll");
+  if (!scrollEl) return;
+  const todayX = parseFloat(scrollEl.dataset.todayX);
+  const pxPerDay = parseFloat(scrollEl.dataset.pxPerDay);
+  const prevBtn = app.querySelector(".curve-arrow.prev");
+  const nextBtn = app.querySelector(".curve-arrow.next");
+  const todayBtn = app.querySelector(".today-btn");
+
+  scrollEl.scrollLeft = todayX;
+
+  prevBtn.addEventListener("click", () => {
+    scrollEl.scrollBy({ left: -pxPerDay, behavior: "smooth" });
+  });
+  nextBtn.addEventListener("click", () => {
+    scrollEl.scrollBy({ left: pxPerDay, behavior: "smooth" });
+  });
+  todayBtn.addEventListener("click", () => {
+    scrollEl.scrollTo({ left: todayX, behavior: "smooth" });
+  });
+  scrollEl.addEventListener("scroll", () => {
+    todayBtn.hidden = Math.abs(scrollEl.scrollLeft - todayX) < 5;
+  });
 }
 
 render();

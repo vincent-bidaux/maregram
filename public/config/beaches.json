@@ -20,7 +20,12 @@
       "water_quality": {
         "site_code": "017000613",
         "latest_classification": "suffisant (2025)",
-        "history": { "2022": "bon", "2023": "insuffisant", "2024": "insuffisant", "2025": "suffisant" },
+        "history": {
+          "2022": "bon",
+          "2023": "insuffisant",
+          "2024": "insuffisant",
+          "2025": "suffisant"
+        },
         "risk_note": "Plage urbaine : le bassin versant pluvial qui aboutit dans la baie couvre environ 50% de la ville, risque de pollution accru après la pluie. Surveillance renforcée pluie/marée avec fermetures préventives possibles.",
         "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000613"
       },
@@ -28,14 +33,16 @@
         "allowed_in_swim_zone": false,
         "note": "SUP/kayak/engins non immatriculés interdits dans la zone de baignade balisée pendant les heures de surveillance (règle générale des 300m). Détail de l'arrêté municipal par plage à vérifier en mairie."
       },
-      "hazards": ["Retrait de la mer sur plusieurs centaines de mètres à marée basse, baignade impossible"]
+      "hazards": [
+        "Retrait de la mer sur plusieurs centaines de mètres à marée basse, baignade impossible"
+      ]
     },
     {
       "id": "minimes",
       "name": "Plage des Minimes",
       "station": "la-rochelle-pallice",
       "color": "#c77dff",
-      "swim_threshold_m": 2.35,
+      "swim_threshold_m": 2.55,
       "swimmable_at_low_tide": false,
       "surveillance": {
         "months": "juillet-août",
@@ -48,7 +55,12 @@
       "water_quality": {
         "site_code": "017000585",
         "latest_classification": "bon (2025)",
-        "history": { "2022": "excellent", "2023": "bon", "2024": "bon", "2025": "bon" },
+        "history": {
+          "2022": "excellent",
+          "2023": "bon",
+          "2024": "bon",
+          "2025": "bon"
+        },
         "risk_note": null,
         "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000585"
       },
@@ -66,7 +78,7 @@
       "name": "Plage de Chef de Baie",
       "station": "la-rochelle-pallice",
       "color": "#4ade80",
-      "swim_threshold_m": 0,
+      "swim_threshold_m": 1.1,
       "swimmable_at_low_tide": true,
       "surveillance": {
         "months": "juillet-août",
@@ -79,7 +91,11 @@
       "water_quality": {
         "site_code": "017000584",
         "latest_classification": "excellent (2024)",
-        "history": { "2022": "excellent", "2023": "excellent", "2024": "excellent" },
+        "history": {
+          "2022": "excellent",
+          "2023": "excellent",
+          "2024": "excellent"
+        },
         "risk_note": null,
         "source": "https://baignades.sante.gouv.fr/baignades/consultSite.do?dptddass=017&site=017000584"
       },

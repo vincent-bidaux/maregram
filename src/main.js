@@ -36,7 +36,7 @@ function trendLabel(levels, now) {
  * Courbe SVG sur 2 jours : sections visuelles par jour, pics/creux annotés
  * (heure + hauteur), et un marqueur rouge pour l'instant présent.
  */
-function curveSvg(levels, tides, now) {
+function curveSvg(levels, tides, now, beaches = []) {
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
   const NB_DAYS = 2;
@@ -54,8 +54,9 @@ function curveSvg(levels, tides, now) {
   const topLabelBand = 46; // place pour les libellés des pleines mers
   const bottomLabelBand = 46; // place pour les libellés des basses mers
   const heights = points.map((p) => p.height);
-  const minH = Math.min(...heights);
-  const maxH = Math.max(...heights);
+  const thresholds = beaches.map((b) => b.swim_threshold_m);
+  const minH = Math.min(...heights, ...thresholds);
+  const maxH = Math.max(...heights, ...thresholds);
   const t0 = dayStart.getTime();
   const t1 = windowEnd.getTime();
 
@@ -112,13 +113,39 @@ function curveSvg(levels, tides, now) {
   const nowY = y(nowPoint.height);
   const nowClamped = Math.max(padX, Math.min(w - padX, nowX));
 
+  const thresholdLines = beaches
+    .map((b) => {
+      const ty = y(b.swim_threshold_m);
+      return `<line x1="${padX}" y1="${ty.toFixed(1)}" x2="${w - padX}" y2="${ty.toFixed(1)}" stroke="${b.color}" stroke-width="1.5" stroke-dasharray="2 4" opacity="0.85" />`;
+    })
+    .join("");
+
+  const legend = beaches.length
+    ? `
+      <div class="threshold-legend">
+        ${beaches
+          .map(
+            (b) => `
+              <span class="legend-item">
+                <span class="legend-dot" style="background:${b.color}"></span>
+                ${b.name} (${b.swim_threshold_m.toFixed(2)} m)
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+    `
+    : "";
+
   return `
     <svg viewBox="0 0 ${w} ${h}" class="curve">
       ${daySections}
+      ${thresholdLines}
       <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
       ${tideLabels}
       <circle cx="${nowClamped.toFixed(1)}" cy="${nowY.toFixed(1)}" r="5.5" fill="#e2554f" stroke="#0b1e2d" stroke-width="2" />
     </svg>
+    ${legend}
   `;
 }
 
@@ -173,7 +200,7 @@ function beachStatus(beach, levels, now) {
 
   return `
     <div class="card beach">
-      <h3>${beach.name}</h3>
+      <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
       <p class="status">${statusHtml}</p>
       <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}${beach.swimmable_at_low_tide ? " · baignable même à marée basse" : ""}</p>
       <p class="meta">Surveillance : ${beach.surveillance?.months || "?"}, ${beach.surveillance?.hours || "?"}</p>
@@ -208,7 +235,7 @@ async function render() {
           ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
           ${nextEvents[0] ? ` · Prochaine ${nextEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
-        ${curveSvg(levels, tides, now)}
+        ${curveSvg(levels, tides, now, beachesConfig.beaches)}
         ${tideListRow(tides, now)}
       </div>
       <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>

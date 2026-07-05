@@ -6,6 +6,7 @@
       "id": "concurrence",
       "name": "Plage de la Concurrence",
       "station": "la-rochelle-pallice",
+      "color": "#f5a623",
       "swim_threshold_m": 3.0,
       "swimmable_at_low_tide": false,
       "surveillance": {
@@ -33,7 +34,8 @@
       "id": "minimes",
       "name": "Plage des Minimes",
       "station": "la-rochelle-pallice",
-      "swim_threshold_m": 3.0,
+      "color": "#c77dff",
+      "swim_threshold_m": 2.35,
       "swimmable_at_low_tide": false,
       "surveillance": {
         "months": "juillet-août",
@@ -63,7 +65,8 @@
       "id": "chef-de-baie",
       "name": "Plage de Chef de Baie",
       "station": "la-rochelle-pallice",
-      "swim_threshold_m": 3.0,
+      "color": "#4ade80",
+      "swim_threshold_m": 0,
       "swimmable_at_low_tide": true,
       "surveillance": {
         "months": "juillet-août",

@@ -11,6 +11,7 @@ import {
   dailyAmplitudes,
   approxCoefficient,
 } from "./tide.js";
+import { loadOverrides, saveOverride, resetOverrides, applyOverrides } from "./settings.js";
 
 const app = document.getElementById("app");
 
@@ -231,6 +232,88 @@ function tideListRow(tides, now, ampBounds) {
   return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
 
+const GEAR_ICON = `
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+`;
+
+let settingsOpen = false;
+
+function settingsPanelHtml(beaches) {
+  return `
+    <div class="settings-overlay" ${settingsOpen ? "" : "hidden"}>
+      <div class="settings-panel">
+        <div class="settings-head">
+          <h2>Réglages</h2>
+          <button class="settings-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div class="settings-body">
+          <h3>Seuils de baignade</h3>
+          <p class="meta">Hauteur d'eau minimum estimée pour se baigner, par plage. Enregistré sur cet appareil seulement.</p>
+          ${beaches
+            .map(
+              (b) => `
+                <label class="settings-row" data-beach-id="${b.id}">
+                  <span class="settings-row-label">
+                    <span class="legend-dot" style="background:${b.color}"></span>
+                    ${b.name}
+                  </span>
+                  <span class="settings-row-input">
+                    <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
+                    <span>m</span>
+                  </span>
+                </label>
+              `
+            )
+            .join("")}
+          <button class="settings-reset" type="button">Réinitialiser les valeurs par défaut</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setupSettingsPanel() {
+  const overlay = app.querySelector(".settings-overlay");
+  const openBtn = app.querySelector(".settings-btn");
+  const closeBtn = app.querySelector(".settings-close");
+  const resetBtn = app.querySelector(".settings-reset");
+  if (!overlay || !openBtn) return;
+
+  openBtn.addEventListener("click", () => {
+    settingsOpen = true;
+    overlay.hidden = false;
+  });
+  closeBtn.addEventListener("click", () => {
+    settingsOpen = false;
+    overlay.hidden = true;
+  });
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      settingsOpen = false;
+      overlay.hidden = true;
+    }
+  });
+
+  overlay.querySelectorAll("input[data-field]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const beachId = input.closest("[data-beach-id]").dataset.beachId;
+      const value = parseFloat(input.value);
+      if (!Number.isNaN(value)) {
+        saveOverride(beachId, input.dataset.field, value);
+        render();
+      }
+    });
+  });
+
+  resetBtn.addEventListener("click", () => {
+    resetOverrides();
+    render();
+  });
+}
+
 function beachStatus(beach, levels, now) {
   const windows = swimWindows(levels, beach.swim_threshold_m);
   const current = currentSwimWindow(windows, now);
@@ -268,10 +351,11 @@ function beachStatus(beach, levels, now) {
 async function render() {
   const now = new Date();
   try {
-    const [{ levels, tides, meta }, beachesConfig] = await Promise.all([
+    const [{ levels, tides, meta }, baseBeachesConfig] = await Promise.all([
       loadStationData("la-rochelle-pallice"),
       loadBeaches(),
     ]);
+    const beachesConfig = applyOverrides(baseBeachesConfig, loadOverrides());
 
     const current = findCurrentLevel(levels, now);
     const nextEvents = nextTideEvents(tides, now, 1);
@@ -288,8 +372,13 @@ async function render() {
 
     app.innerHTML = `
       <div class="hero-card">
-        <p class="eyebrow">${stationDisplay}</p>
-        <h1 class="app-title">Marées &amp; Seuils de baignade</h1>
+        <div class="hero-head">
+          <div>
+            <p class="eyebrow">${stationDisplay}</p>
+            <h1 class="app-title">Marées &amp; Seuils de baignade</h1>
+          </div>
+          <button class="settings-btn" type="button" aria-label="Réglages">${GEAR_ICON}</button>
+        </div>
         <div class="now-row">
           <p class="now-line">
             ${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ·
@@ -319,9 +408,12 @@ async function render() {
       ${beachesHtml}
 
       <p class="footnote">${meta.attribution}<br />* Coefficient estimé (non officiel), le SHOM ne publie pas gratuitement sa valeur réelle.</p>
+
+      ${settingsPanelHtml(beachesConfig.beaches)}
     `;
 
     setupCurveScroll();
+    setupSettingsPanel();
   } catch (err) {
     app.innerHTML = `
       <h1>Marées — La Rochelle</h1>

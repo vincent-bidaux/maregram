@@ -31,6 +31,12 @@ const fmtTime = (d) =>
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
 const fmtHeight = (h) => `${h.toFixed(2)} m`;
+const fmtDuration = (ms) => {
+  const totalMinutes = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
+};
 const fmtDayLabel = (d, today) => {
   const isToday = d.toDateString() === today.toDateString();
   const isTomorrow = d.toDateString() === new Date(today.getTime() + 86400000).toDateString();
@@ -491,19 +497,33 @@ function beachStatus(beach, levels, now) {
   if (current) {
     statusClass = "ok";
     symbol = "✓";
-    statusText = `Baignade possible <span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
+    statusText = `Baignade possible<br /><span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
   } else if (next && next.start.toDateString() === now.toDateString()) {
     statusClass = "warn";
     symbol = "⚠";
-    statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
   } else if (next) {
     statusClass = "no";
     symbol = "⚠";
-    statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
     statusClass = "no";
     symbol = "✕";
     statusText = `Pas de créneau à venir dans les données chargées`;
+  }
+
+  const MAX_PLAUSIBLE_WINDOW_MS = 14 * 3600 * 1000;
+  const activeWindow = current || next;
+  let durationHtml = "";
+  if (activeWindow && activeWindow.end - activeWindow.start > MAX_PLAUSIBLE_WINDOW_MS) {
+    // Seuil jamais franchi dans les données chargées (plage "toujours baignable") :
+    // la fenêtre calculée n'est pas bornée par la marée, donc pas de vraie durée à afficher.
+    durationHtml = `<p class="meta">Baignade possible en continu sur toute la marée</p>`;
+  } else if (activeWindow) {
+    durationHtml = `<p class="meta">Durée de baignade : ${fmtDuration(activeWindow.end - activeWindow.start)}</p>`;
+    if (current) {
+      durationHtml += `<p class="meta">Temps restant : ${fmtDuration(activeWindow.end - now)}</p>`;
+    }
   }
 
   const wq = beach.water_quality;
@@ -516,22 +536,22 @@ function beachStatus(beach, levels, now) {
     : "";
 
   const detailsHtml = `
+    <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
     ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
     ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
     ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
     ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
     ${hazardsHtml}
   `;
-  const hasDetails = Boolean(beach.swimmable_at_low_tide || beach.surveillance || wq || beach.note || hazardsHtml);
 
   return `
     <div class="card beach">
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
-      <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
-      ${hasDetails ? `<div class="beach-details" hidden>${detailsHtml}</div>` : ""}
-      ${hasDetails ? `<button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>` : ""}
+      ${durationHtml}
+      <div class="beach-details" hidden>${detailsHtml}</div>
+      <button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>
     </div>
   `;
 }

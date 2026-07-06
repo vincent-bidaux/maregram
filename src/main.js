@@ -487,15 +487,22 @@ function beachStatus(beach, levels, now) {
   const current = currentSwimWindow(windows, now);
   const next = nextSwimWindow(windows, now);
 
-  let statusDot, statusText;
+  let statusClass, symbol, statusText;
   if (current) {
-    statusDot = "ok";
+    statusClass = "ok";
+    symbol = "✓";
     statusText = `Baignade possible <span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
+  } else if (next && next.start.toDateString() === now.toDateString()) {
+    statusClass = "warn";
+    symbol = "!";
+    statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
   } else if (next) {
-    statusDot = "no";
+    statusClass = "no";
+    symbol = "✕";
     statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
-    statusDot = "no";
+    statusClass = "no";
+    symbol = "✕";
     statusText = `Pas de créneau à venir dans les données chargées`;
   }
 
@@ -520,7 +527,7 @@ function beachStatus(beach, levels, now) {
     <div class="card beach">
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
-      <p class="status"><span class="status-dot ${statusDot}"></span>${statusText}</p>
+      <p class="status ${statusClass}">${symbol} ${statusText}</p>
       <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
       ${hasDetails ? `<div class="beach-details" hidden>${detailsHtml}</div>` : ""}
       ${hasDetails ? `<button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>` : ""}

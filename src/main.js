@@ -307,7 +307,7 @@ function settingsPanelHtml(beaches) {
     .join("");
 
   return `
-    <div class="settings-overlay" ${settingsOpen ? "" : "hidden"}>
+    <div class="settings-overlay ${settingsOpen ? "open" : ""}">
       <div class="settings-panel">
         <div class="settings-head">
           <h2>Réglages</h2>
@@ -350,16 +350,16 @@ function setupSettingsPanel() {
 
   openBtn.addEventListener("click", () => {
     settingsOpen = true;
-    overlay.hidden = false;
+    overlay.classList.add("open");
   });
   closeBtn.addEventListener("click", () => {
     settingsOpen = false;
-    overlay.hidden = true;
+    overlay.classList.remove("open");
   });
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) {
       settingsOpen = false;
-      overlay.hidden = true;
+      overlay.classList.remove("open");
     }
   });
 
@@ -487,13 +487,16 @@ function beachStatus(beach, levels, now) {
   const current = currentSwimWindow(windows, now);
   const next = nextSwimWindow(windows, now);
 
-  let statusHtml;
+  let statusDot, statusText;
   if (current) {
-    statusHtml = `<span class="badge ok">Baignade possible</span> jusqu'à ${fmtTime(current.end)}`;
+    statusDot = "ok";
+    statusText = `Baignade possible <span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
   } else if (next) {
-    statusHtml = `<span class="badge no">Pas maintenant</span> à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})`;
+    statusDot = "no";
+    statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
-    statusHtml = `<span class="badge no">Pas de créneau à venir dans les données chargées</span>`;
+    statusDot = "no";
+    statusText = `Pas de créneau à venir dans les données chargées`;
   }
 
   const wq = beach.water_quality;
@@ -505,18 +508,20 @@ function beachStatus(beach, levels, now) {
     : "";
 
   const detailsHtml = `
+    ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
     ${beach.surveillance ? `<p class="meta">Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
     ${wq ? `<p class="meta">Qualité de l'eau : <span class="badge ${wqBadgeClass}">${wq.latest_classification}</span></p>` : ""}
     ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
     ${hazardsHtml}
   `;
-  const hasDetails = Boolean(beach.surveillance || wq || beach.note || hazardsHtml);
+  const hasDetails = Boolean(beach.swimmable_at_low_tide || beach.surveillance || wq || beach.note || hazardsHtml);
 
   return `
     <div class="card beach">
+      ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
-      <p class="status">${statusHtml}</p>
-      <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}${beach.swimmable_at_low_tide ? " · baignable même à marée basse" : ""}</p>
+      <p class="status"><span class="status-dot ${statusDot}"></span>${statusText}</p>
+      <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
       ${hasDetails ? `<div class="beach-details" hidden>${detailsHtml}</div>` : ""}
       ${hasDetails ? `<button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>` : ""}
     </div>

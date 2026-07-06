@@ -32,8 +32,32 @@ function trendLabel(levels, now) {
   return rising ? "montante ↗" : "descendante ↘";
 }
 
+// Phase lunaire approximative (précision ~1 jour, suffisante pour une icône).
+const SYNODIC_MONTH = 29.530588853;
+const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);
+const MOON_ICONS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+
+function moonEmoji(date) {
+  const days = (date.getTime() - KNOWN_NEW_MOON) / 86400000;
+  let fraction = (days % SYNODIC_MONTH) / SYNODIC_MONTH;
+  if (fraction < 0) fraction += 1;
+  return MOON_ICONS[Math.round(fraction * 8) % 8];
+}
+
+const STATION_DISPLAY_NAMES = {
+  "la-rochelle-pallice": "LA ROCHELLE - PALLICE",
+};
+
+let measureCanvas = null;
+function measureTextWidth(text, font) {
+  if (!measureCanvas) measureCanvas = document.createElement("canvas");
+  const ctx = measureCanvas.getContext("2d");
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
 const PX_PER_DAY = 320;
-const CURVE_H = 200;
+const CURVE_H = 210;
 
 /**
  * Courbe SVG sur toute la période chargée : sections visuelles par jour,
@@ -54,8 +78,8 @@ function curveSvg(levels, tides, now, beaches = []) {
 
   const w = nbDays * PX_PER_DAY;
   const h = CURVE_H;
-  const topLabelBand = 46;
-  const bottomLabelBand = 46;
+  const topLabelBand = 64; // libellé du jour + libellé de pic sans collision
+  const bottomLabelBand = 50;
   const heights = levels.map((p) => p.height);
   const thresholds = beaches.map((b) => b.swim_threshold_m);
   const minH = Math.min(...heights, ...thresholds);
@@ -81,7 +105,14 @@ function curveSvg(levels, tides, now, beaches = []) {
     if (i > 0) {
       daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
-    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${fmtDayLabel(d0, now)}</text>`;
+    const dayLabelText = fmtDayLabel(d0, now);
+    const dayLabelWidth = measureTextWidth(
+      dayLabelText.toUpperCase(),
+      "600 11px system-ui, -apple-system, 'Segoe UI', sans-serif"
+    );
+    const moonX = bx0 + 6 + dayLabelWidth + 8;
+    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${dayLabelText}</text>`;
+    daySections += `<text x="${moonX.toFixed(1)}" y="15" class="day-moon">${moonEmoji(d0)}</text>`;
   }
 
   // Libellés de toutes les pleines/basses mers
@@ -163,21 +194,34 @@ function tideListRow(tides, now) {
   });
   if (!todays.length) return "";
 
+  const highs = todays.filter((e) => e.type === "high").map((e) => e.height);
+  const lows = todays.filter((e) => e.type === "low").map((e) => e.height);
+  const avgAmplitude =
+    highs.length && lows.length
+      ? highs.reduce((a, b) => a + b, 0) / highs.length - lows.reduce((a, b) => a + b, 0) / lows.length
+      : null;
+
   const items = todays
-    .map(
-      (e) => `
-        <div class="tide-item">
+    .map((e) => {
+      const isPast = new Date(e.time) < now;
+      return `
+        <div class="tide-item ${isPast ? "past" : ""}">
           <span class="tide-arrow ${e.type}">${e.type === "high" ? "↑" : "↓"}</span>
           <span class="tide-item-text">
             <span class="tide-item-time">${fmtTime(e.time)}</span>
             <span class="tide-item-height">${e.height.toFixed(2)} m</span>
           </span>
         </div>
-      `
-    )
+      `;
+    })
     .join("");
 
-  return `<div class="tide-list">${items}</div>`;
+  const amplitudeHtml =
+    avgAmplitude != null
+      ? `<p class="meta amplitude">Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m</p>`
+      : "";
+
+  return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
 
 function beachStatus(beach, levels, now) {
@@ -231,12 +275,20 @@ async function render() {
       .join("");
 
     const curve = curveSvg(levels, tides, now, beachesConfig.beaches);
+    const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
 
     app.innerHTML = `
       <div class="hero-card">
-        <p class="eyebrow">Aujourd'hui</p>
-        <h1 class="date-big">${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</h1>
-        <p class="now-height">${current ? fmtHeight(current.height) : "—"} <span class="trend">${current ? trendLabel(levels, now) : ""}</span></p>
+        <p class="eyebrow">${stationDisplay}</p>
+        <h1 class="app-title">Marées &amp; Seuils de baignade</h1>
+        <div class="now-row">
+          <p class="now-line">
+            ${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ·
+            ${current ? fmtHeight(current.height) : "—"}
+            <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
+          </p>
+          <span class="moon-icon-now" title="Phase lunaire du jour">${moonEmoji(now)}</span>
+        </div>
         <p class="meta">
           ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
           ${nextEvents[0] ? ` · Prochaine ${nextEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}

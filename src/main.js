@@ -518,7 +518,7 @@ function beachStatus(beach, levels, now) {
   const detailsHtml = `
     ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
     ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
-    ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau : <span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
+    ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
     ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
     ${hazardsHtml}
   `;

@@ -397,9 +397,8 @@ h2 {
   position: relative;
 }
 
-.card.beach > .meta:last-of-type,
-.beach-details > .meta:last-of-type {
-  padding-right: 1.9rem;
+.card.beach:has(.info-toggle) {
+  padding-bottom: 2.4rem;
 }
 
 .card.beach .status + .meta {
@@ -450,13 +449,13 @@ h2 {
 
 .info-toggle {
   position: absolute;
-  right: 0.6rem;
-  bottom: 0.6rem;
+  right: 0.7rem;
+  bottom: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border-radius: 999px;
   border: none;
@@ -466,8 +465,8 @@ h2 {
 }
 
 .info-toggle svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .info-toggle.active {

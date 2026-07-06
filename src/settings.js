@@ -60,14 +60,9 @@ export function toggleFavorite(beachId, isCurrentlyFavorite, currentFavoriteCoun
   });
 }
 
-export function moveBeach(orderedIds, beachId, direction) {
-  const ids = [...orderedIds];
-  const i = ids.indexOf(beachId);
-  const j = i + direction;
-  if (i < 0 || j < 0 || j >= ids.length) return;
-  [ids[i], ids[j]] = [ids[j], ids[i]];
+export function setOrder(orderedIds) {
   update((s) => {
-    s.order = ids;
+    s.order = orderedIds;
   });
 }
 

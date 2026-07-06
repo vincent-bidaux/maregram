@@ -351,6 +351,40 @@ h2 {
   font-size: 1.05rem;
 }
 
+.card.beach {
+  position: relative;
+  padding-bottom: 2.75rem;
+}
+
+.beach-details {
+  margin-top: 0.4rem;
+}
+
+.beach-details[hidden] {
+  display: none;
+}
+
+.info-toggle {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.info-toggle.active {
+  background: var(--accent);
+  color: #0a1622;
+}
+
 .badge {
   display: inline-block;
   padding: 0.15rem 0.55rem;
@@ -451,9 +485,44 @@ h2 {
   margin: 1rem 0 0.25rem;
 }
 
+.settings-beach-list {
+  position: relative;
+}
+
 .settings-beach-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+}
+
+.settings-beach-row.dragging {
+  position: relative;
+  z-index: 5;
+  opacity: 0.9;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+}
+
+.settings-beach-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.drag-handle {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: grab;
+  padding: 0.3rem 0.25rem;
+  margin-top: 0.15rem;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .settings-beach-top {
@@ -465,8 +534,7 @@ h2 {
 .settings-beach-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: flex-end;
   margin-top: 0.6rem;
 }
 
@@ -540,27 +608,6 @@ h2 {
 
 .color-swatch-option:hover {
   border-color: rgba(255, 255, 255, 0.6);
-}
-
-.reorder-btns {
-  display: flex;
-  gap: 0.3rem;
-}
-
-.reorder-btns button {
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.7rem;
-}
-
-.reorder-btns button:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
 }
 
 .add-beach-form {

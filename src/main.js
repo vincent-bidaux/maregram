@@ -17,7 +17,7 @@ import {
   setThreshold,
   setColor,
   toggleFavorite,
-  moveBeach,
+  setOrder,
   addCustomBeach,
   removeCustomBeach,
   resetAll,
@@ -250,6 +250,22 @@ const GEAR_ICON = `
   </svg>
 `;
 
+const DRAG_HANDLE_ICON = `
+  <svg viewBox="0 0 10 16" width="10" height="16" fill="currentColor">
+    <circle cx="2" cy="2" r="1.3"/><circle cx="8" cy="2" r="1.3"/>
+    <circle cx="2" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/>
+    <circle cx="2" cy="14" r="1.3"/><circle cx="8" cy="14" r="1.3"/>
+  </svg>
+`;
+
+const INFO_ICON = `
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="16" x2="12" y2="12"/>
+    <line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>
+`;
+
 let settingsOpen = false;
 let openColorPickerId = null;
 
@@ -263,29 +279,27 @@ function colorPaletteHtml(beachId) {
 
 function settingsPanelHtml(beaches) {
   const favoriteCount = beaches.filter((b) => b.favorite).length;
-  const orderedIds = beaches.map((b) => b.id);
 
   const rows = beaches
-    .map((b, i) => {
+    .map((b) => {
       const starDisabled = !b.favorite && favoriteCount >= MAX_FAVORITES;
       return `
         <div class="settings-beach-row" data-beach-id="${b.id}">
-          <div class="settings-beach-top">
-            <button type="button" class="fav-star ${b.favorite ? "active" : ""}" ${starDisabled ? "disabled" : ""} aria-label="Favori">${b.favorite ? "★" : "☆"}</button>
-            <button type="button" class="color-swatch" data-color="${b.color}" style="background:${b.color}" aria-label="Changer la couleur"></button>
-            <span class="settings-row-label">${b.name}</span>
-            ${b.custom ? `<button type="button" class="remove-custom" aria-label="Supprimer">✕</button>` : ""}
-          </div>
-          ${colorPaletteHtml(b.id)}
-          <div class="settings-beach-bottom">
-            <div class="reorder-btns">
-              <button type="button" class="move-up" ${i === 0 ? "disabled" : ""} aria-label="Monter">▲</button>
-              <button type="button" class="move-down" ${i === beaches.length - 1 ? "disabled" : ""} aria-label="Descendre">▼</button>
+          <button type="button" class="drag-handle" aria-label="Réordonner">${DRAG_HANDLE_ICON}</button>
+          <div class="settings-beach-main">
+            <div class="settings-beach-top">
+              <button type="button" class="fav-star ${b.favorite ? "active" : ""}" ${starDisabled ? "disabled" : ""} aria-label="Favori">${b.favorite ? "★" : "☆"}</button>
+              <button type="button" class="color-swatch" data-color="${b.color}" style="background:${b.color}" aria-label="Changer la couleur"></button>
+              <span class="settings-row-label">${b.name}</span>
+              ${b.custom ? `<button type="button" class="remove-custom" aria-label="Supprimer">✕</button>` : ""}
             </div>
-            <span class="settings-row-input">
-              <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
-              <span>m</span>
-            </span>
+            ${colorPaletteHtml(b.id)}
+            <div class="settings-beach-bottom">
+              <span class="settings-row-input">
+                <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
+                <span>m</span>
+              </span>
+            </div>
           </div>
         </div>
       `;
@@ -293,7 +307,7 @@ function settingsPanelHtml(beaches) {
     .join("");
 
   return `
-    <div class="settings-overlay" ${settingsOpen ? "" : "hidden"} data-order='${JSON.stringify(orderedIds)}'>
+    <div class="settings-overlay" ${settingsOpen ? "" : "hidden"}>
       <div class="settings-panel">
         <div class="settings-head">
           <h2>Réglages</h2>
@@ -302,10 +316,10 @@ function settingsPanelHtml(beaches) {
         <div class="settings-body">
           <h3>Lieux de baignade</h3>
           <p class="meta">
-            L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). L'ordre ci-dessous s'applique à toute l'app.
-            Réglages enregistrés sur cet appareil seulement.
+            L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner —
+            l'ordre s'applique à toute l'app. Réglages enregistrés sur cet appareil seulement.
           </p>
-          ${rows}
+          <div class="settings-beach-list">${rows}</div>
 
           <h3>Ajouter un lieu</h3>
           <form class="add-beach-form">
@@ -332,7 +346,6 @@ function setupSettingsPanel() {
   const addForm = app.querySelector(".add-beach-form");
   if (!overlay || !openBtn) return;
 
-  const orderedIds = JSON.parse(overlay.dataset.order);
   const favoriteCount = overlay.querySelectorAll(".fav-star.active").length;
 
   openBtn.addEventListener("click", () => {
@@ -370,20 +383,7 @@ function setupSettingsPanel() {
     });
   });
 
-  overlay.querySelectorAll(".move-up").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const beachId = btn.closest("[data-beach-id]").dataset.beachId;
-      moveBeach(orderedIds, beachId, -1);
-      render();
-    });
-  });
-  overlay.querySelectorAll(".move-down").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const beachId = btn.closest("[data-beach-id]").dataset.beachId;
-      moveBeach(orderedIds, beachId, 1);
-      render();
-    });
-  });
+  setupBeachDrag(overlay.querySelector(".settings-beach-list"));
 
   overlay.querySelectorAll(".color-swatch").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -430,6 +430,58 @@ function setupSettingsPanel() {
   });
 }
 
+/**
+ * Réordonnancement par glisser-déposer (souris + tactile via Pointer Events,
+ * fonctionne sur iOS contrairement au drag-and-drop HTML5 natif). On déplace
+ * la ligne visuellement, on la permute dans le DOM quand elle franchit le
+ * milieu d'une ligne voisine, et on persiste l'ordre final au relâchement.
+ */
+function setupBeachDrag(list) {
+  if (!list) return;
+
+  list.querySelectorAll(".drag-handle").forEach((handle) => {
+    handle.style.touchAction = "none";
+
+    handle.addEventListener("pointerdown", (e) => {
+      const row = handle.closest(".settings-beach-row");
+      let startY = e.clientY;
+      row.setPointerCapture(e.pointerId);
+      row.classList.add("dragging");
+
+      const onMove = (moveEvent) => {
+        const dy = moveEvent.clientY - startY;
+        row.style.transform = `translateY(${dy}px)`;
+
+        for (const sibling of list.querySelectorAll(".settings-beach-row")) {
+          if (sibling === row) continue;
+          const rect = sibling.getBoundingClientRect();
+          if (moveEvent.clientY > rect.top && moveEvent.clientY < rect.bottom) {
+            const rowIndex = Array.from(list.children).indexOf(row);
+            const siblingIndex = Array.from(list.children).indexOf(sibling);
+            list.insertBefore(row, rowIndex < siblingIndex ? sibling.nextSibling : sibling);
+            row.style.transform = "translateY(0)";
+            startY = moveEvent.clientY;
+            break;
+          }
+        }
+      };
+
+      const onUp = () => {
+        row.classList.remove("dragging");
+        row.style.transform = "";
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        const newOrder = Array.from(list.querySelectorAll(".settings-beach-row")).map((r) => r.dataset.beachId);
+        setOrder(newOrder);
+        render();
+      };
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+  });
+}
+
 function beachStatus(beach, levels, now) {
   const windows = swimWindows(levels, beach.swim_threshold_m);
   const current = currentSwimWindow(windows, now);
@@ -452,15 +504,21 @@ function beachStatus(beach, levels, now) {
     ? `<p class="meta hazards">⚠ ${beach.hazards.join(" · ")}</p>`
     : "";
 
+  const detailsHtml = `
+    ${beach.surveillance ? `<p class="meta">Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
+    ${wq ? `<p class="meta">Qualité de l'eau : <span class="badge ${wqBadgeClass}">${wq.latest_classification}</span></p>` : ""}
+    ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
+    ${hazardsHtml}
+  `;
+  const hasDetails = Boolean(beach.surveillance || wq || beach.note || hazardsHtml);
+
   return `
     <div class="card beach">
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
       <p class="status">${statusHtml}</p>
       <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}${beach.swimmable_at_low_tide ? " · baignable même à marée basse" : ""}</p>
-      ${beach.surveillance ? `<p class="meta">Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
-      ${wq ? `<p class="meta">Qualité de l'eau : <span class="badge ${wqBadgeClass}">${wq.latest_classification}</span></p>` : ""}
-      ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
-      ${hazardsHtml}
+      ${hasDetails ? `<div class="beach-details" hidden>${detailsHtml}</div>` : ""}
+      ${hasDetails ? `<button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>` : ""}
     </div>
   `;
 }
@@ -532,12 +590,23 @@ async function render() {
 
     setupCurveScroll();
     setupSettingsPanel();
+    setupBeachCards();
   } catch (err) {
     app.innerHTML = `
       <h1>Marées — La Rochelle</h1>
       <div class="card"><p class="status">Erreur de chargement : ${err.message}</p></div>
     `;
   }
+}
+
+function setupBeachCards() {
+  app.querySelectorAll(".card.beach .info-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const details = btn.previousElementSibling;
+      details.hidden = !details.hidden;
+      btn.classList.toggle("active", !details.hidden);
+    });
+  });
 }
 
 function setupCurveScroll() {

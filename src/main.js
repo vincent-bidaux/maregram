@@ -494,11 +494,11 @@ function beachStatus(beach, levels, now) {
     statusText = `Baignade possible <span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
   } else if (next && next.start.toDateString() === now.toDateString()) {
     statusClass = "warn";
-    symbol = "!";
+    symbol = "⚠";
     statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
   } else if (next) {
     statusClass = "no";
-    symbol = "✕";
+    symbol = "⚠";
     statusText = `Pas maintenant <span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
     statusClass = "no";
@@ -508,7 +508,8 @@ function beachStatus(beach, levels, now) {
 
   const wq = beach.water_quality;
   const wqClass = wq?.latest_classification?.split(" ")[0] || "";
-  const wqBadgeClass = { excellent: "ok", bon: "ok", suffisant: "warn", insuffisant: "no" }[wqClass] || "";
+  const wqStatusClass = { excellent: "ok", bon: "ok", suffisant: "warn", insuffisant: "no" }[wqClass] || "";
+  const wqSymbol = { excellent: "✓", bon: "✓", suffisant: "⚠", insuffisant: "✕" }[wqClass] || "";
 
   const hazardsHtml = beach.hazards?.length
     ? `<p class="meta hazards">⚠ ${beach.hazards.join(" · ")}</p>`
@@ -516,8 +517,8 @@ function beachStatus(beach, levels, now) {
 
   const detailsHtml = `
     ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
-    ${beach.surveillance ? `<p class="meta">Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
-    ${wq ? `<p class="meta">Qualité de l'eau : <span class="badge ${wqBadgeClass}">${wq.latest_classification}</span></p>` : ""}
+    ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
+    ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau : <span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
     ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
     ${hazardsHtml}
   `;
@@ -528,7 +529,7 @@ function beachStatus(beach, levels, now) {
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
-      <p class="meta">Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
+      <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
       ${hasDetails ? `<div class="beach-details" hidden>${detailsHtml}</div>` : ""}
       ${hasDetails ? `<button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>` : ""}
     </div>

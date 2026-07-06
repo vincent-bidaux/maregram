@@ -581,7 +581,7 @@ async function render() {
       <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
 
       <h2>Baignade par plage</h2>
-      ${beachesHtml}
+      <div class="beach-grid">${beachesHtml}</div>
 
       <p class="footnote">${meta.attribution}<br />* Coefficient estimé (non officiel), le SHOM ne publie pas gratuitement sa valeur réelle.</p>
 

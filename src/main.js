@@ -8,6 +8,8 @@ import {
   swimWindows,
   currentSwimWindow,
   nextSwimWindow,
+  dailyAmplitudes,
+  approxCoefficient,
 } from "./tide.js";
 
 const app = document.getElementById("app");
@@ -184,7 +186,7 @@ function legendHtml(beaches) {
   `;
 }
 
-function tideListRow(tides, now) {
+function tideListRow(tides, now, ampBounds) {
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart.getTime() + 86400000);
@@ -216,10 +218,15 @@ function tideListRow(tides, now) {
     })
     .join("");
 
-  const amplitudeHtml =
-    avgAmplitude != null
-      ? `<p class="meta amplitude">Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m</p>`
-      : "";
+  let amplitudeHtml = "";
+  if (avgAmplitude != null) {
+    const coeff = approxCoefficient(avgAmplitude, ampBounds.min, ampBounds.max);
+    amplitudeHtml = `
+      <p class="meta amplitude" title="Estimation non officielle à partir de l'amplitude locale : le SHOM ne publie pas gratuitement le vrai coefficient de marée">
+        Coefficient ≈ ${coeff}* · Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m
+      </p>
+    `;
+  }
 
   return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
@@ -276,6 +283,8 @@ async function render() {
 
     const curve = curveSvg(levels, tides, now, beachesConfig.beaches);
     const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
+    const allAmplitudes = dailyAmplitudes(tides).map((d) => d.amplitude);
+    const ampBounds = { min: Math.min(...allAmplitudes), max: Math.max(...allAmplitudes) };
 
     app.innerHTML = `
       <div class="hero-card">
@@ -302,14 +311,14 @@ async function render() {
           <button class="today-btn" type="button" hidden>Aujourd'hui</button>
         </div>
         ${legendHtml(beachesConfig.beaches)}
-        ${tideListRow(tides, now)}
+        ${tideListRow(tides, now, ampBounds)}
       </div>
       <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
 
       <h2>Baignade par plage</h2>
       ${beachesHtml}
 
-      <p class="footnote">${meta.attribution}</p>
+      <p class="footnote">${meta.attribution}<br />* Coefficient estimé (non officiel), le SHOM ne publie pas gratuitement sa valeur réelle.</p>
     `;
 
     setupCurveScroll();

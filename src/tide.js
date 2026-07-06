@@ -87,3 +87,35 @@ export function currentSwimWindow(windows, now = new Date()) {
 export function nextSwimWindow(windows, now = new Date()) {
   return windows.find((w) => w.start > now) || null;
 }
+
+/** Amplitude moyenne (pleine mer - basse mer) pour chaque jour ayant les deux. */
+export function dailyAmplitudes(tides) {
+  const byDay = new Map();
+  for (const e of tides) {
+    const d = new Date(e.time);
+    d.setHours(0, 0, 0, 0);
+    const key = d.getTime();
+    if (!byDay.has(key)) byDay.set(key, { highs: [], lows: [] });
+    byDay.get(key)[e.type === "high" ? "highs" : "lows"].push(e.height);
+  }
+  const result = [];
+  for (const [key, { highs, lows }] of byDay) {
+    if (!highs.length || !lows.length) continue;
+    const avgHigh = highs.reduce((a, b) => a + b, 0) / highs.length;
+    const avgLow = lows.reduce((a, b) => a + b, 0) / lows.length;
+    result.push({ day: new Date(key), amplitude: avgHigh - avgLow });
+  }
+  return result;
+}
+
+/**
+ * Coefficient de marée ESTIMÉ (pas la valeur officielle du SHOM, qui n'est
+ * pas disponible gratuitement). Mappe l'amplitude quotidienne sur l'échelle
+ * conventionnelle [20,120], calibrée sur le min/max observé dans les
+ * données chargées plutôt que sur des constantes de port non vérifiées.
+ */
+export function approxCoefficient(amplitude, minAmp, maxAmp) {
+  if (maxAmp === minAmp) return 70;
+  const t = (amplitude - minAmp) / (maxAmp - minAmp);
+  return Math.round(20 + Math.min(1, Math.max(0, t)) * 100);
+}

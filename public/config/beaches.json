@@ -8,6 +8,7 @@
       "station": "la-rochelle-pallice",
       "color": "#f5a623",
       "swim_threshold_m": 3.0,
+      "default_favorite": true,
       "swimmable_at_low_tide": false,
       "surveillance": {
         "months": "juillet-août",
@@ -43,6 +44,7 @@
       "station": "la-rochelle-pallice",
       "color": "#c77dff",
       "swim_threshold_m": 2.55,
+      "default_favorite": true,
       "swimmable_at_low_tide": false,
       "surveillance": {
         "months": "juillet-août",
@@ -79,6 +81,7 @@
       "station": "la-rochelle-pallice",
       "color": "#4ade80",
       "swim_threshold_m": 1.1,
+      "default_favorite": true,
       "swimmable_at_low_tide": true,
       "surveillance": {
         "months": "juillet-août",
@@ -104,6 +107,24 @@
         "note": "SUP/kayak/engins non immatriculés interdits dans la zone de baignade balisée pendant les heures de surveillance (règle générale des 300m)."
       },
       "hazards": []
+    },
+    {
+      "id": "digue-du-casino",
+      "name": "Digue du Casino",
+      "station": "la-rochelle-pallice",
+      "color": "#f87171",
+      "swim_threshold_m": 3.5,
+      "default_favorite": false,
+      "note": "Ajoutée sans recherche approfondie (surveillance/qualité d'eau non vérifiées) — à compléter si besoin."
+    },
+    {
+      "id": "baie-port-neuf-girouette",
+      "name": "Baie de Port Neuf - Girouette",
+      "station": "la-rochelle-pallice",
+      "color": "#f472b6",
+      "swim_threshold_m": 3.5,
+      "default_favorite": false,
+      "note": "Ajoutée sans recherche approfondie (surveillance/qualité d'eau non vérifiées) — à compléter si besoin."
     }
   ],
   "regional_context": {

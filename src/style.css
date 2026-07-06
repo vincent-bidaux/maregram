@@ -444,20 +444,157 @@ h2 {
   margin: 1rem 0 0.25rem;
 }
 
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.settings-beach-row {
   padding: 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.settings-row-label {
+.settings-beach-top {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.settings-beach-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.settings-row-label {
+  flex: 1;
   font-size: 0.9rem;
+}
+
+.fav-star {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 1.6rem;
+}
+
+.fav-star.active {
+  color: #f5c518;
+}
+
+.fav-star:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.color-swatch {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0;
+}
+
+.remove-custom {
+  flex-shrink: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0 2.1rem;
+}
+
+.color-palette[hidden] {
+  display: none;
+}
+
+.color-swatch-option {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch-option:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.reorder-btns {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.reorder-btns button {
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.reorder-btns button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.add-beach-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.add-beach-form input[name="name"] {
+  flex: 1;
+  min-width: 8rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.add-beach-form input[name="threshold"] {
+  width: 4.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.45rem 0.5rem;
+  text-align: right;
+}
+
+.add-beach-form button[type="submit"] {
+  border: none;
+  background: var(--accent);
+  color: #0a1622;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .settings-row-input {

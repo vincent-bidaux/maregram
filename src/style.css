@@ -655,8 +655,21 @@ h2 {
 .settings-beach-bottom {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-top: 0.6rem;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .settings-row-label {

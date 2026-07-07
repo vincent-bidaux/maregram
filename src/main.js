@@ -303,15 +303,20 @@ function settingsPanelHtml(beaches) {
             </div>
             ${colorPaletteHtml(b.id)}
             <div class="settings-beach-bottom">
-              <span class="settings-row-input" title="Temps de trajet jusqu'à ce lieu (pour l'heure de départ)">
-                <span>🚶</span>
-                <input type="number" step="5" min="0" max="240" value="${b.travel_minutes}" data-field="travel_minutes" />
-                <span>min</span>
-              </span>
-              <span class="settings-row-input">
-                <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
-                <span>m</span>
-              </span>
+              <label class="settings-field" title="Temps de trajet jusqu'à ce lieu (pour l'heure de départ)">
+                <span class="field-label">Distance</span>
+                <span class="settings-row-input">
+                  <input type="number" step="5" min="0" max="240" value="${b.travel_minutes}" data-field="travel_minutes" />
+                  <span>min</span>
+                </span>
+              </label>
+              <label class="settings-field" title="Hauteur d'eau minimale pour se baigner">
+                <span class="field-label">Seuil</span>
+                <span class="settings-row-input">
+                  <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
+                  <span>m</span>
+                </span>
+              </label>
             </div>
           </div>
         </div>

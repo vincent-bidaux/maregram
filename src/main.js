@@ -242,7 +242,7 @@ function tideListRow(tides, now) {
   if (avgAmplitude != null) {
     const coeff = approxCoefficient(avgAmplitude);
     amplitudeHtml = `
-      <p class="meta amplitude" title="Estimation non officielle à partir de l'amplitude locale : le SHOM ne publie pas gratuitement le vrai coefficient de marée">
+      <p class="meta amplitude" title="Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100) ; le SHOM ne publie pas gratuitement le coefficient officiel">
         Coefficient ≈ ${coeff}* · Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m
       </p>
     `;
@@ -682,7 +682,7 @@ async function render() {
       <h2>Baignade par plage</h2>
       <div class="beach-grid">${beachesHtml}</div>
 
-      <p class="footnote">${meta.attribution}<br />* Coefficient estimé (non officiel), le SHOM ne publie pas gratuitement sa valeur réelle.</p>
+      <p class="footnote">${meta.attribution}<br />* Coefficient estimé à partir du marnage, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice — le SHOM ne publie pas gratuitement la valeur officielle.</p>
 
       ${settingsPanelHtml(allBeaches)}
     `;

@@ -105,12 +105,23 @@ def detect_extrema(points):
     return events
 
 
+def load_key_from_dotenv():
+    """Lit API_MAREE_KEY dans le .env à la racine du projet (gitignoré)."""
+    env_path = Path(__file__).parent.parent / ".env"
+    if not env_path.exists():
+        return None
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("API_MAREE_KEY="):
+            return line.split("=", 1)[1].strip() or None
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--site", default="la-rochelle-pallice")
     parser.add_argument("--from", dest="date_from", default="2026-06-01")
     parser.add_argument("--to", dest="date_to", default="2026-09-30")
-    parser.add_argument("--key", default=os.environ.get("API_MAREE_KEY"))
+    parser.add_argument("--key", default=os.environ.get("API_MAREE_KEY") or load_key_from_dotenv())
     parser.add_argument("--out-dir", default=None)
     args = parser.parse_args()
 

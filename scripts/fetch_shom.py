@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 """
+OBSOLÈTE — conservé pour référence uniquement. Les endpoints internes de
+maree.shom.fr sont protégés par un WAF qui a bloqué nos requêtes (juillet 2026)
+et la fenêtre de prédiction est limitée à ~J+11. Le pipeline actif est
+fetch_api_maree.py (api-maree.fr).
+
 Récupère les données de marée (SHOM, via l'API interne du site public
 maree.shom.fr) pour un port donné et les stocke en local en JSON.
 

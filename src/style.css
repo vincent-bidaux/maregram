@@ -43,6 +43,23 @@ h1 {
   font-size: 0.8rem;
 }
 
+.stale-banner {
+  background: #5c2b2b;
+  color: #f0c2c2;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+}
+
+.stale-banner code {
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+}
+
 .card {
   background: var(--surface);
   border-radius: 10px;

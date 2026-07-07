@@ -37,6 +37,8 @@ const fmtDuration = (ms) => {
   const m = totalMinutes % 60;
   return `${h}:${String(m).padStart(2, "0")}`;
 };
+const esc = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmtDayLabel = (d, today) => {
   const isToday = d.toDateString() === today.toDateString();
   const isTomorrow = d.toDateString() === new Date(today.getTime() + 86400000).toDateString();
@@ -195,7 +197,7 @@ function legendHtml(beaches) {
           (b) => `
             <span class="legend-item">
               <span class="legend-dot" style="background:${b.color}"></span>
-              ${b.name} (${b.swim_threshold_m.toFixed(2)} m)
+              ${esc(b.name)} (${b.swim_threshold_m.toFixed(2)} m)
             </span>
           `
         )
@@ -296,7 +298,7 @@ function settingsPanelHtml(beaches) {
             <div class="settings-beach-top">
               <button type="button" class="fav-star ${b.favorite ? "active" : ""}" ${starDisabled ? "disabled" : ""} aria-label="Favori">${b.favorite ? "★" : "☆"}</button>
               <button type="button" class="color-swatch" data-color="${b.color}" style="background:${b.color}" aria-label="Changer la couleur"></button>
-              <span class="settings-row-label">${b.name}</span>
+              <span class="settings-row-label">${esc(b.name)}</span>
               ${b.custom ? `<button type="button" class="remove-custom" aria-label="Supprimer">✕</button>` : ""}
             </div>
             ${colorPaletteHtml(b.id)}
@@ -545,9 +547,9 @@ function beachStatus(beach, levels, now) {
   `;
 
   return `
-    <div class="card beach">
+    <div class="card beach" data-beach-id="${beach.id}">
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
-      <h3><span class="legend-dot" style="background:${beach.color}"></span>${beach.name}</h3>
+      <h3><span class="legend-dot" style="background:${beach.color}"></span>${esc(beach.name)}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
       ${durationHtml}
       <div class="beach-details" hidden>${detailsHtml}</div>
@@ -558,6 +560,14 @@ function beachStatus(beach, levels, now) {
 
 async function render() {
   const now = new Date();
+  // État UI à préserver quand le re-render vient du rafraîchissement périodique
+  const prevScrollEl = app.querySelector(".curve-scroll");
+  const prevScroll = prevScrollEl ? prevScrollEl.scrollLeft : null;
+  const openDetailIds = new Set(
+    Array.from(app.querySelectorAll(".card.beach"))
+      .filter((c) => c.querySelector(".beach-details") && !c.querySelector(".beach-details").hidden)
+      .map((c) => c.dataset.beachId)
+  );
   try {
     const [{ levels, tides, meta }, baseBeachesConfig] = await Promise.all([
       loadStationData("la-rochelle-pallice"),
@@ -566,7 +576,8 @@ async function render() {
     const allBeaches = buildBeachList(baseBeachesConfig.beaches);
     const favoriteBeaches = allBeaches.filter((b) => b.favorite).slice(0, MAX_FAVORITES);
 
-    const current = findCurrentLevel(levels, now);
+    const dataStale = levels.length && now > new Date(levels[levels.length - 1].time);
+    const current = dataStale ? null : findCurrentLevel(levels, now);
     const nextEvents = nextTideEvents(tides, now, 1);
     const prevEvents = previousTideEvents(tides, now, 1);
 
@@ -579,7 +590,12 @@ async function render() {
     const allAmplitudes = dailyAmplitudes(tides).map((d) => d.amplitude);
     const ampBounds = { min: Math.min(...allAmplitudes), max: Math.max(...allAmplitudes) };
 
+    const staleBanner = dataStale
+      ? `<div class="stale-banner">⚠ Données de marée expirées (dernier point : ${fmtDate(levels[levels.length - 1].time)} ${fmtTime(levels[levels.length - 1].time)}). Relancer <code>scripts/fetch_api_maree.py</code> puis redéployer.</div>`
+      : "";
+
     app.innerHTML = `
+      ${staleBanner}
       <div class="hero-card">
         <div class="hero-head">
           <div>
@@ -621,9 +637,9 @@ async function render() {
       ${settingsPanelHtml(allBeaches)}
     `;
 
-    setupCurveScroll();
+    setupCurveScroll(prevScroll);
     setupSettingsPanel();
-    setupBeachCards();
+    setupBeachCards(openDetailIds);
   } catch (err) {
     app.innerHTML = `
       <h1>Marées — La Rochelle</h1>
@@ -632,17 +648,23 @@ async function render() {
   }
 }
 
-function setupBeachCards() {
-  app.querySelectorAll(".card.beach .info-toggle").forEach((btn) => {
+function setupBeachCards(openDetailIds = new Set()) {
+  app.querySelectorAll(".card.beach").forEach((card) => {
+    const details = card.querySelector(".beach-details");
+    const btn = card.querySelector(".info-toggle");
+    if (!details || !btn) return;
+    if (openDetailIds.has(card.dataset.beachId)) {
+      details.hidden = false;
+      btn.classList.add("active");
+    }
     btn.addEventListener("click", () => {
-      const details = btn.previousElementSibling;
       details.hidden = !details.hidden;
       btn.classList.toggle("active", !details.hidden);
     });
   });
 }
 
-function setupCurveScroll() {
+function setupCurveScroll(initialScroll = null) {
   const scrollEl = app.querySelector(".curve-scroll");
   if (!scrollEl) return;
   const todayX = parseFloat(scrollEl.dataset.todayX);
@@ -651,7 +673,8 @@ function setupCurveScroll() {
   const nextBtn = app.querySelector(".curve-arrow.next");
   const todayBtn = app.querySelector(".today-btn");
 
-  scrollEl.scrollLeft = todayX;
+  scrollEl.scrollLeft = initialScroll ?? todayX;
+  todayBtn.hidden = Math.abs(scrollEl.scrollLeft - todayX) < 5;
 
   prevBtn.addEventListener("click", () => {
     scrollEl.scrollBy({ left: -pxPerDay, behavior: "smooth" });
@@ -668,3 +691,13 @@ function setupCurveScroll() {
 }
 
 render();
+
+// Rafraîchit l'instant présent (point rouge, statuts, temps restant) sans
+// perdre l'état UI ; suspendu pendant que le panneau de réglages est ouvert
+// pour ne pas casser un drag ou une saisie en cours.
+setInterval(() => {
+  if (!settingsOpen) render();
+}, 60_000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !settingsOpen) render();
+});

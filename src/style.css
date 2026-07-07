@@ -160,8 +160,8 @@ h1 {
 }
 
 .moon-icon-now {
-  font-size: 1.6rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -270,10 +270,6 @@ h1 {
   fill: var(--muted);
   font-size: 11px;
   text-anchor: middle;
-}
-
-.curve .day-moon {
-  font-size: 12px;
 }
 
 .tide-list {

@@ -57,14 +57,33 @@ function trendLabel(levels, now) {
 // Phase lunaire approximative (précision ~1 jour, suffisante pour une icône).
 const SYNODIC_MONTH = 29.530588853;
 const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);
-const MOON_ICONS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
 
-function moonEmoji(date) {
+function moonPhaseIndex(date) {
   const days = (date.getTime() - KNOWN_NEW_MOON) / 86400000;
   let fraction = (days % SYNODIC_MONTH) / SYNODIC_MONTH;
   if (fraction < 0) fraction += 1;
-  return MOON_ICONS[Math.round(fraction * 8) % 8];
+  return Math.round(fraction * 8) % 8; // 0 nouvelle lune … 4 pleine lune
 }
+
+/**
+ * Phase de lune monochrome dessinée en SVG (grille 12×12) : contour + partie
+ * éclairée délimitée par un arc de terminateur elliptique. Convention
+ * hémisphère nord : croissante éclairée à droite.
+ */
+function moonInnerSvg(idx) {
+  const outline = `<circle cx="6" cy="6" r="5" fill="none" stroke="var(--muted)" stroke-width="1"/>`;
+  if (idx === 0) return outline;
+  if (idx === 4) return `${outline}<circle cx="6" cy="6" r="5" fill="var(--text)"/>`;
+  const litRight = idx < 4;
+  const isCrescent = idx === 1 || idx === 7;
+  const k = (Math.abs(Math.cos((idx / 8) * 2 * Math.PI)) * 5).toFixed(2);
+  const outerSweep = litRight ? 1 : 0;
+  const termSweep = (litRight && isCrescent) || (!litRight && !isCrescent) ? 0 : 1;
+  return `${outline}<path d="M 6 1 A 5 5 0 0 ${outerSweep} 6 11 A ${k} 5 0 0 ${termSweep} 6 1 Z" fill="var(--text)"/>`;
+}
+
+const moonSvg = (date, size) =>
+  `<svg viewBox="0 0 12 12" width="${size}" height="${size}" aria-hidden="true">${moonInnerSvg(moonPhaseIndex(date))}</svg>`;
 
 const STATION_DISPLAY_NAMES = {
   "la-rochelle-pallice": "LA ROCHELLE - PALLICE",
@@ -146,9 +165,10 @@ function curveSvg(levels, tides, now, beaches = []) {
       dayLabelText.toUpperCase(),
       "600 11px system-ui, -apple-system, 'Segoe UI', sans-serif"
     );
-    const moonX = bx0 + 6 + dayLabelWidth + 8;
+    const moonX = bx0 + 6 + dayLabelWidth + 12;
     daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${dayLabelText}</text>`;
-    daySections += `<text x="${moonX.toFixed(1)}" y="15" class="day-moon">${moonEmoji(d0)}</text>`;
+    // Lune ~9px de haut, centrée sur la hauteur des capitales du libellé
+    daySections += `<g transform="translate(${moonX.toFixed(1)}, 5.5) scale(0.75)">${moonInnerSvg(moonPhaseIndex(d0))}</g>`;
   }
 
   // Libellés de toutes les pleines/basses mers
@@ -638,7 +658,7 @@ async function render() {
             ${current ? fmtHeight(current.height) : "—"}
             <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
           </p>
-          <span class="moon-icon-now" title="Phase lunaire du jour">${moonEmoji(now)}</span>
+          <span class="moon-icon-now" title="Phase lunaire du jour">${moonSvg(now, 22)}</span>
         </div>
         <p class="meta">
           ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}

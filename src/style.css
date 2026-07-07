@@ -575,6 +575,11 @@ h2 {
   pointer-events: auto;
 }
 
+/* Popup ouverte : la page derrière ne doit plus défiler (surtout sur iOS) */
+body.modal-open {
+  overflow: hidden;
+}
+
 .settings-panel {
   width: 100%;
   max-width: 480px;
@@ -785,7 +790,7 @@ h2 {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 1rem;
   padding: 0.45rem 0.6rem;
 }
 
@@ -795,7 +800,7 @@ h2 {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 1rem;
   padding: 0.45rem 0.5rem;
   text-align: right;
 }
@@ -826,7 +831,8 @@ h2 {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: var(--text);
-  font-size: 0.95rem;
+  /* ≥16px : en dessous, iOS zoome la page au focus (scroll horizontal induit) */
+  font-size: 1rem;
   padding: 0.35rem 0.5rem;
   text-align: right;
 }

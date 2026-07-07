@@ -400,19 +400,17 @@ function setupSettingsPanel() {
 
   const favoriteCount = overlay.querySelectorAll(".fav-star.active").length;
 
-  openBtn.addEventListener("click", () => {
-    settingsOpen = true;
-    overlay.classList.add("open");
-  });
-  closeBtn.addEventListener("click", () => {
-    settingsOpen = false;
-    overlay.classList.remove("open");
-  });
+  const setOpen = (open) => {
+    settingsOpen = open;
+    overlay.classList.toggle("open", open);
+    document.body.classList.toggle("modal-open", open);
+  };
+  document.body.classList.toggle("modal-open", settingsOpen);
+
+  openBtn.addEventListener("click", () => setOpen(true));
+  closeBtn.addEventListener("click", () => setOpen(false));
   overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      settingsOpen = false;
-      overlay.classList.remove("open");
-    }
+    if (e.target === overlay) setOpen(false);
   });
 
   overlay.querySelectorAll("input[data-field]").forEach((input) => {
@@ -546,6 +544,21 @@ function beachStatus(beach, levels, now) {
   const next = nextSwimWindow(windows, now);
   const travel = beach.travel_minutes || 0;
 
+  // "Partir vers" : maintenant si on arrive encore dans le créneau en cours,
+  // sinon l'heure de départ pour attraper le début du prochain créneau.
+  let departHtml = "";
+  if (travel > 0) {
+    const arrivalIfNow = new Date(now.getTime() + travel * 60000);
+    let label = null;
+    if (current && arrivalIfNow <= current.end) {
+      label = "maintenant";
+    } else if (next) {
+      const dep = departureTime(next.start, travel);
+      label = dep <= now ? "maintenant" : fmtTime(dep);
+    }
+    if (label) departHtml = `<p class="meta">Partir vers : <span class="dep">${label}</span></p>`;
+  }
+
   let statusClass, symbol, statusText;
   if (current) {
     statusClass = "ok";
@@ -600,7 +613,7 @@ function beachStatus(beach, levels, now) {
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${esc(beach.name)}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
-      ${travel > 0 && !current && next ? `<p class="meta">Partir vers : <span class="dep">${fmtTime(departureTime(next.start, travel))}</span></p>` : ""}
+      ${departHtml}
       ${durationHtml}
       <div class="beach-details" hidden>${detailsHtml}</div>
       <button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>

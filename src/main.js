@@ -506,8 +506,6 @@ function beachStatus(beach, levels, now) {
   const current = currentSwimWindow(windows, now);
   const next = nextSwimWindow(windows, now);
   const travel = beach.travel_minutes || 0;
-  const depHtml = (start) =>
-    travel > 0 ? ` · partir à ${fmtTime(departureTime(start, travel))}` : "";
 
   let statusClass, symbol, statusText;
   if (current) {
@@ -517,11 +515,11 @@ function beachStatus(beach, levels, now) {
   } else if (next && next.start.toDateString() === now.toDateString()) {
     statusClass = "warn";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}${depHtml(next.start)}</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
   } else if (next) {
     statusClass = "no";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})${depHtml(next.start)}</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
     statusClass = "no";
     symbol = "✕";
@@ -563,6 +561,7 @@ function beachStatus(beach, levels, now) {
       ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${esc(beach.name)}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
+      ${travel > 0 && !current && next ? `<p class="meta">Partir vers : <span class="dep">${fmtTime(departureTime(next.start, travel))}</span></p>` : ""}
       ${durationHtml}
       <div class="beach-details" hidden>${detailsHtml}</div>
       <button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>

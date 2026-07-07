@@ -460,6 +460,34 @@ h2 {
   margin-top: 0.4rem;
 }
 
+.upcoming {
+  margin: 0.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.upcoming-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.upcoming-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+.up-day {
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.dep {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
 .beach-details[hidden] {
   display: none;
 }

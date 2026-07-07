@@ -46,6 +46,13 @@ export function setThreshold(beachId, value) {
   });
 }
 
+/** Temps de trajet perso (minutes) jusqu'au lieu, pour calculer l'heure de départ. */
+export function setTravelMinutes(beachId, minutes) {
+  update((s) => {
+    s.overrides[beachId] = { ...s.overrides[beachId], travel_minutes: minutes };
+  });
+}
+
 export function setColor(beachId, color) {
   update((s) => {
     s.overrides[beachId] = { ...s.overrides[beachId], color };
@@ -106,6 +113,7 @@ export function buildBeachList(baseBeaches) {
     swim_threshold_m: settings.overrides[b.id]?.swim_threshold_m ?? b.swim_threshold_m,
     color: settings.overrides[b.id]?.color ?? b.color,
     favorite: settings.overrides[b.id]?.favorite ?? b.favorite,
+    travel_minutes: settings.overrides[b.id]?.travel_minutes ?? b.travel_minutes ?? 0,
   }));
 
   const orderIndex = new Map(settings.order.map((id, i) => [id, i]));

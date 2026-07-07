@@ -8,13 +8,13 @@ import {
   swimWindows,
   currentSwimWindow,
   nextSwimWindow,
-  dailyAmplitudes,
   approxCoefficient,
 } from "./tide.js";
 import {
   MAX_FAVORITES,
   COLOR_PALETTE,
   setThreshold,
+  setTravelMinutes,
   setColor,
   toggleFavorite,
   setOrder,
@@ -206,7 +206,7 @@ function legendHtml(beaches) {
   `;
 }
 
-function tideListRow(tides, now, ampBounds) {
+function tideListRow(tides, now) {
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart.getTime() + 86400000);
@@ -240,7 +240,7 @@ function tideListRow(tides, now, ampBounds) {
 
   let amplitudeHtml = "";
   if (avgAmplitude != null) {
-    const coeff = approxCoefficient(avgAmplitude, ampBounds.min, ampBounds.max);
+    const coeff = approxCoefficient(avgAmplitude);
     amplitudeHtml = `
       <p class="meta amplitude" title="Estimation non officielle à partir de l'amplitude locale : le SHOM ne publie pas gratuitement le vrai coefficient de marée">
         Coefficient ≈ ${coeff}* · Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m
@@ -303,6 +303,11 @@ function settingsPanelHtml(beaches) {
             </div>
             ${colorPaletteHtml(b.id)}
             <div class="settings-beach-bottom">
+              <span class="settings-row-input" title="Temps de trajet jusqu'à ce lieu (pour l'heure de départ)">
+                <span>🚶</span>
+                <input type="number" step="5" min="0" max="240" value="${b.travel_minutes}" data-field="travel_minutes" />
+                <span>min</span>
+              </span>
               <span class="settings-row-input">
                 <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
                 <span>m</span>
@@ -371,14 +376,14 @@ function setupSettingsPanel() {
     }
   });
 
-  overlay.querySelectorAll("input[data-field='swim_threshold_m']").forEach((input) => {
+  overlay.querySelectorAll("input[data-field]").forEach((input) => {
     input.addEventListener("change", () => {
       const beachId = input.closest("[data-beach-id]").dataset.beachId;
       const value = parseFloat(input.value);
-      if (!Number.isNaN(value)) {
-        setThreshold(beachId, value);
-        render();
-      }
+      if (Number.isNaN(value)) return;
+      if (input.dataset.field === "swim_threshold_m") setThreshold(beachId, value);
+      else if (input.dataset.field === "travel_minutes") setTravelMinutes(beachId, Math.max(0, Math.round(value)));
+      render();
     });
   });
 
@@ -490,10 +495,57 @@ function setupBeachDrag(list) {
   });
 }
 
+// Au-delà, le seuil n'est jamais franchi dans les données ("toujours baignable")
+const MAX_PLAUSIBLE_WINDOW_MS = 14 * 3600 * 1000;
+
+/** Heure de départ = début du créneau moins le temps de trajet perso. */
+const departureTime = (start, travelMinutes) => new Date(start.getTime() - travelMinutes * 60000);
+
+/**
+ * Liste "quand y aller / quand partir" : les créneaux de baignade des 7
+ * prochains jours, découpés par jour, avec l'heure de départ si un temps
+ * de trajet est réglé pour ce lieu.
+ */
+function upcomingWindowsHtml(windows, now, travelMinutes) {
+  const rows = [];
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  for (let d = 0; d < 7; d++) {
+    const dayStart = new Date(todayStart.getTime() + d * 86400000);
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
+    const dayWindows = windows.filter((w) => w.start < dayEnd && w.end > dayStart && w.end > now);
+    if (!dayWindows.length) continue;
+
+    const parts = dayWindows.map((w) => {
+      if (w.end - w.start > MAX_PLAUSIBLE_WINDOW_MS) return "toute la journée";
+      const start = w.start < dayStart ? dayStart : w.start;
+      const end = w.end > dayEnd ? dayEnd : w.end;
+      let text = `${fmtTime(start)}–${fmtTime(end)}`;
+      if (travelMinutes > 0 && w.start >= dayStart && start > now) {
+        text += ` <span class="dep">départ ${fmtTime(departureTime(start, travelMinutes))}</span>`;
+      }
+      return text;
+    });
+    rows.push(
+      `<p class="meta upcoming-row"><span class="up-day">${fmtDate(dayStart)}</span><span>${parts.join(" · ")}</span></p>`
+    );
+  }
+  if (!rows.length) return "";
+  return `
+    <div class="upcoming">
+      <p class="meta upcoming-title">Créneaux des 7 prochains jours</p>
+      ${rows.join("")}
+    </div>
+  `;
+}
+
 function beachStatus(beach, levels, now) {
   const windows = swimWindows(levels, beach.swim_threshold_m);
   const current = currentSwimWindow(windows, now);
   const next = nextSwimWindow(windows, now);
+  const travel = beach.travel_minutes || 0;
+  const depHtml = (start) =>
+    travel > 0 ? ` · partir à ${fmtTime(departureTime(start, travel))}` : "";
 
   let statusClass, symbol, statusText;
   if (current) {
@@ -503,18 +555,16 @@ function beachStatus(beach, levels, now) {
   } else if (next && next.start.toDateString() === now.toDateString()) {
     statusClass = "warn";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}${depHtml(next.start)}</span>`;
   } else if (next) {
     statusClass = "no";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
+    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})${depHtml(next.start)}</span>`;
   } else {
     statusClass = "no";
     symbol = "✕";
     statusText = `Pas de créneau à venir dans les données chargées`;
   }
-
-  const MAX_PLAUSIBLE_WINDOW_MS = 14 * 3600 * 1000;
   const activeWindow = current || next;
   let durationHtml = "";
   if (activeWindow && activeWindow.end - activeWindow.start > MAX_PLAUSIBLE_WINDOW_MS) {
@@ -538,7 +588,9 @@ function beachStatus(beach, levels, now) {
     : "";
 
   const detailsHtml = `
+    ${upcomingWindowsHtml(windows, now, travel)}
     <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
+    ${travel > 0 ? `<p class="meta">🚶 Trajet : ${travel} min</p>` : ""}
     ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
     ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
     ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
@@ -587,8 +639,6 @@ async function render() {
 
     const curve = curveSvg(levels, tides, now, favoriteBeaches);
     const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
-    const allAmplitudes = dailyAmplitudes(tides).map((d) => d.amplitude);
-    const ampBounds = { min: Math.min(...allAmplitudes), max: Math.max(...allAmplitudes) };
 
     const staleBanner = dataStale
       ? `<div class="stale-banner">⚠ Données de marée expirées (dernier point : ${fmtDate(levels[levels.length - 1].time)} ${fmtTime(levels[levels.length - 1].time)}). Relancer <code>scripts/fetch_api_maree.py</code> puis redéployer.</div>`
@@ -625,7 +675,7 @@ async function render() {
           <button class="today-btn" type="button" hidden>Aujourd'hui</button>
         </div>
         ${legendHtml(favoriteBeaches)}
-        ${tideListRow(tides, now, ampBounds)}
+        ${tideListRow(tides, now)}
       </div>
       <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
 

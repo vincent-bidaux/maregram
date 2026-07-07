@@ -110,12 +110,15 @@ export function dailyAmplitudes(tides) {
 
 /**
  * Coefficient de marée ESTIMÉ (pas la valeur officielle du SHOM, qui n'est
- * pas disponible gratuitement). Mappe l'amplitude quotidienne sur l'échelle
- * conventionnelle [20,120], calibrée sur le min/max observé dans les
- * données chargées plutôt que sur des constantes de port non vérifiées.
+ * pas disponible gratuitement). Le coefficient est proportionnel au marnage
+ * en régime semi-diurne : calibré sur les niveaux caractéristiques publiés
+ * pour La Rochelle-Pallice — vive-eau moyenne (coeff 95) : PM 6,09 m /
+ * BM 0,72 m, soit un marnage de 5,37 m → marnage ≈ 5,65 m à coefficient 100.
+ * Contrôle : morte-eau moyenne (coeff 45) publiée à 2,41 m de marnage
+ * → 2,41/5,65×100 ≈ 43, cohérent.
  */
-export function approxCoefficient(amplitude, minAmp, maxAmp) {
-  if (maxAmp === minAmp) return 70;
-  const t = (amplitude - minAmp) / (maxAmp - minAmp);
-  return Math.round(20 + Math.min(1, Math.max(0, t)) * 100);
+const RANGE_AT_COEFF_100 = 5.65;
+
+export function approxCoefficient(amplitude) {
+  return Math.round(Math.min(120, Math.max(20, (amplitude / RANGE_AT_COEFF_100) * 100)));
 }

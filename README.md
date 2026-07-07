@@ -24,7 +24,13 @@ src/                               App : main.js (UI), tide.js (logique marée),
                                    settings.js (réglages localStorage)
 ```
 
-## Rafraîchir les données (à faire ~toutes les 2-3 semaines)
+## Rafraîchir les données
+
+Automatique : la GitHub Action `.github/workflows/refresh-tide-data.yml`
+relance le fetch lundi et jeudi et pousse le commit ; Netlify (branché sur le
+repo) redéploie à chaque push. Secret GitHub requis : `API_MAREE_KEY`.
+
+Manuel si besoin :
 
 api-maree.fr ne sert qu'une **fenêtre glissante J-30 → J+30**. Le script est
 cumulatif : il fusionne les nouveaux points avec l'existant sans perdre

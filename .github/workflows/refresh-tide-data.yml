@@ -1,0 +1,33 @@
+# Rafraîchit les données de marée (fenêtre glissante J±30 d'api-maree.fr)
+# et pousse le commit ; le déploiement est assuré par Netlify, branché sur
+# le repo (auto-build à chaque push sur main).
+#
+# Secret requis : API_MAREE_KEY (clé api-maree.fr).
+# NB : après la saison (30 sept. 2026 + 30 j), le script sortira en erreur
+# "hors fenêtre" — mettre à jour les dates --from/--to ou désactiver le cron.
+name: Refresh tide data
+
+on:
+  schedule:
+    - cron: "0 4 * * 1,4" # lundi et jeudi 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch tide data
+        env:
+          API_MAREE_KEY: ${{ secrets.API_MAREE_KEY }}
+        run: python3 scripts/fetch_api_maree.py --from 2026-06-01 --to 2026-09-30
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git diff --cached --quiet || { git commit -m "Refresh tide data (scheduled)"; git push; }

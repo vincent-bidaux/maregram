@@ -127,7 +127,21 @@ function curveSvg(levels, tides, now, beaches = []) {
     if (i > 0) {
       daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
-    const dayLabelText = fmtDayLabel(d0, now);
+    // Coefficient estimé du jour, affiché à la suite de la date
+    const dayEndTs = d0.getTime() + 86400000;
+    const dayTides = tides.filter((e) => {
+      const t = new Date(e.time).getTime();
+      return t >= d0.getTime() && t < dayEndTs;
+    });
+    const highs = dayTides.filter((e) => e.type === "high").map((e) => e.height);
+    const lows = dayTides.filter((e) => e.type === "low").map((e) => e.height);
+    const coeffText =
+      highs.length && lows.length
+        ? ` · ${approxCoefficient(
+            highs.reduce((a, b) => a + b, 0) / highs.length - lows.reduce((a, b) => a + b, 0) / lows.length
+          )}`
+        : "";
+    const dayLabelText = fmtDayLabel(d0, now) + coeffText;
     const dayLabelWidth = measureTextWidth(
       dayLabelText.toUpperCase(),
       "600 11px system-ui, -apple-system, 'Segoe UI', sans-serif"

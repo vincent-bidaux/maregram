@@ -660,7 +660,18 @@ async function render() {
       <h2>Baignade par plage</h2>
       <div class="beach-grid">${beachesHtml}</div>
 
-      <p class="footnote">${meta.attribution}<br />* Coefficient estimé à partir du marnage, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice — le SHOM ne publie pas gratuitement la valeur officielle.</p>
+      <footer class="credits">
+        <p class="footnote">* Coefficient estimé à partir du marnage, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice — le SHOM ne publie pas gratuitement la valeur officielle.</p>
+        <p class="footnote">
+          Données de marée : <a href="https://api-maree.fr" target="_blank" rel="noopener">api-maree.fr</a> (licence CC-BY), calculées à partir de composantes harmoniques <a href="https://www.ifremer.fr" target="_blank" rel="noopener">IFREMER</a> / PREVIMER ·
+          Qualité des eaux de baignade : <a href="https://baignades.sante.gouv.fr" target="_blank" rel="noopener">baignades.sante.gouv.fr</a> (Ministère de la Santé / ARS) ·
+          Infos plages et surveillance : <a href="https://www.larochelle.fr" target="_blank" rel="noopener">larochelle.fr</a>
+        </p>
+        <p class="footnote">
+          Construit avec <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · Hébergé par <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
+        </p>
+        <p class="footnote credits-brand">Édité par larochelle-today · v09, CC licence en cours</p>
+      </footer>
 
       ${settingsPanelHtml(allBeaches)}
     `;

@@ -530,6 +530,31 @@ h2 {
   margin-top: 2rem;
 }
 
+.credits {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.credits .footnote {
+  margin: 0 0 0.6rem;
+  line-height: 1.5;
+}
+
+.credits a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.credits a:hover {
+  text-decoration: underline;
+}
+
+.credits-brand {
+  font-weight: 600;
+  color: var(--text);
+}
+
 .settings-overlay {
   position: fixed;
   inset: 0;

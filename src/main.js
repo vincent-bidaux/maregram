@@ -701,3 +701,8 @@ setInterval(() => {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !settingsOpen) render();
 });
+
+// PWA hors-ligne (prod uniquement : en dev le SW mettrait en cache les modules Vite)
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}

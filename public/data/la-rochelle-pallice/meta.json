@@ -1,11 +1,11 @@
 {
   "site": "la-rochelle-pallice",
+  "requested_from": "2026-06-01",
+  "requested_to": "2026-09-30",
   "date_from": "2026-06-05",
-  "date_to": "2026-08-04",
+  "date_to": "2026-08-05",
   "step_minutes": 10,
   "source": "api-maree.fr (CC-BY)",
   "attribution": "Hauteurs d'eau diffusées par api-maree.fr, calculées à partir de composantes harmoniques IFREMER / PREVIMER.",
-  "note": "Pas de coefficient de marée officiel SHOM inclus (à vérifier manuellement si besoin).",
-  "requested_from": "2026-06-01",
-  "requested_to": "2026-09-30"
+  "note": "Pas de coefficient de marée officiel SHOM inclus (à vérifier manuellement si besoin)."
 }

@@ -148,21 +148,31 @@ def main():
     points = fetch_water_levels(args.site, args.key, start_dt, end_dt)
 
     curve_path = out_dir / "water_levels.json"
-    curve_path.write_text(json.dumps(points, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Courbe écrite dans {curve_path} ({len(points)} points)")
+    existing_points = []
+    if curve_path.exists():
+        existing_points = json.loads(curve_path.read_text(encoding="utf-8"))
+        print(f"{len(existing_points)} points déjà présents dans {curve_path}, fusion avec les {len(points)} nouveaux...")
 
-    print("Détection des pleines/basses mers par pics locaux...")
+    by_time = {p["time"]: p for p in existing_points}
+    by_time.update({p["time"]: p for p in points})
+    points = sorted(by_time.values(), key=lambda p: p["time"])
+
+    curve_path.write_text(json.dumps(points, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Courbe fusionnée écrite dans {curve_path} ({len(points)} points au total)")
+
+    print("Détection des pleines/basses mers par pics locaux sur l'historique complet...")
     events = detect_extrema(points)
     events_path = out_dir / "high_low_tides.json"
     events_path.write_text(json.dumps(events, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"{len(events)} évènements (PM/BM) écrits dans {events_path}")
 
+    actual_from = points[0]["time"][:10] if points else clamped_from.isoformat()
     actual_to = points[-1]["time"][:10] if points else clamped_from.isoformat()
     meta = {
         "site": args.site,
         "requested_from": args.date_from,
         "requested_to": args.date_to,
-        "date_from": clamped_from.isoformat(),
+        "date_from": actual_from,
         "date_to": actual_to,
         "step_minutes": STEP_MINUTES,
         "source": "api-maree.fr (CC-BY)",

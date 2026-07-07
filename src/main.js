@@ -501,44 +501,6 @@ const MAX_PLAUSIBLE_WINDOW_MS = 14 * 3600 * 1000;
 /** Heure de départ = début du créneau moins le temps de trajet perso. */
 const departureTime = (start, travelMinutes) => new Date(start.getTime() - travelMinutes * 60000);
 
-/**
- * Liste "quand y aller / quand partir" : les créneaux de baignade des 7
- * prochains jours, découpés par jour, avec l'heure de départ si un temps
- * de trajet est réglé pour ce lieu.
- */
-function upcomingWindowsHtml(windows, now, travelMinutes) {
-  const rows = [];
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  for (let d = 0; d < 7; d++) {
-    const dayStart = new Date(todayStart.getTime() + d * 86400000);
-    const dayEnd = new Date(dayStart.getTime() + 86400000);
-    const dayWindows = windows.filter((w) => w.start < dayEnd && w.end > dayStart && w.end > now);
-    if (!dayWindows.length) continue;
-
-    const parts = dayWindows.map((w) => {
-      if (w.end - w.start > MAX_PLAUSIBLE_WINDOW_MS) return "toute la journée";
-      const start = w.start < dayStart ? dayStart : w.start;
-      const end = w.end > dayEnd ? dayEnd : w.end;
-      let text = `${fmtTime(start)}–${fmtTime(end)}`;
-      if (travelMinutes > 0 && w.start >= dayStart && start > now) {
-        text += ` <span class="dep">départ ${fmtTime(departureTime(start, travelMinutes))}</span>`;
-      }
-      return text;
-    });
-    rows.push(
-      `<p class="meta upcoming-row"><span class="up-day">${fmtDate(dayStart)}</span><span>${parts.join(" · ")}</span></p>`
-    );
-  }
-  if (!rows.length) return "";
-  return `
-    <div class="upcoming">
-      <p class="meta upcoming-title">Créneaux des 7 prochains jours</p>
-      ${rows.join("")}
-    </div>
-  `;
-}
-
 function beachStatus(beach, levels, now) {
   const windows = swimWindows(levels, beach.swim_threshold_m);
   const current = currentSwimWindow(windows, now);
@@ -588,9 +550,7 @@ function beachStatus(beach, levels, now) {
     : "";
 
   const detailsHtml = `
-    ${upcomingWindowsHtml(windows, now, travel)}
     <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
-    ${travel > 0 ? `<p class="meta">🚶 Trajet : ${travel} min</p>` : ""}
     ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
     ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
     ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}

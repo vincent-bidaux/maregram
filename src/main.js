@@ -256,7 +256,7 @@ function tideListRow(tides, now) {
   if (avgAmplitude != null) {
     const coeff = approxCoefficient(avgAmplitude);
     amplitudeHtml = `
-      <p class="meta amplitude" title="Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100) ; le SHOM ne publie pas gratuitement le coefficient officiel">
+      <p class="meta amplitude" title="Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100)">
         Coefficient ≈ ${coeff}* · Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m
       </p>
     `;
@@ -661,7 +661,7 @@ async function render() {
       <div class="beach-grid">${beachesHtml}</div>
 
       <footer class="credits">
-        <p class="footnote">* Coefficient estimé à partir du marnage, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice — le SHOM ne publie pas gratuitement la valeur officielle.</p>
+        <p class="footnote">* Coefficient estimé à partir du marnage du jour, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice (valeur indicative, non officielle).</p>
         <p class="footnote">
           Données de marée : <a href="https://api-maree.fr" target="_blank" rel="noopener">api-maree.fr</a> (licence CC-BY), calculées à partir de composantes harmoniques <a href="https://www.ifremer.fr" target="_blank" rel="noopener">IFREMER</a> / PREVIMER ·
           Qualité des eaux de baignade : <a href="https://baignades.sante.gouv.fr" target="_blank" rel="noopener">baignades.sante.gouv.fr</a> (Ministère de la Santé / ARS) ·

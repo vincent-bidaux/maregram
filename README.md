@@ -71,6 +71,10 @@ netlify deploy --prod --dir=dist   # déploiement (site déjà lié via .netlify
   après relevés sur place — modifiables dans l'app (panneau réglages,
   persistées en localStorage) ou en dur dans `public/config/beaches.json`.
 
+## Licence
+
+CC BY-NC-SA 4.0 — voir [LICENSE.md](LICENSE.md). Édité par larochelle-today.
+
 ## Phase 2 (prévu)
 
 Plages hors agglomération : île d'Aix, Boyardville, Rivedoux, Châtelaillon,

@@ -670,7 +670,10 @@ async function render() {
         <p class="footnote">
           Construit avec <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · Hébergé par <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
         </p>
-        <p class="footnote credits-brand">Édité par larochelle-today · v09, CC licence en cours</p>
+        <p class="footnote credits-brand">
+          Édité par larochelle-today · v09 ·
+          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank" rel="license noopener"><img src="/cc-by-nc-sa.png" alt="Licence CC BY-NC-SA 4.0" class="cc-badge" width="80" height="15" /></a>
+        </p>
       </footer>
 
       ${settingsPanelHtml(allBeaches)}

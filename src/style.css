@@ -555,6 +555,11 @@ h2 {
   color: var(--text);
 }
 
+.cc-badge {
+  vertical-align: text-bottom;
+  border-radius: 2px;
+}
+
 .settings-overlay {
   position: fixed;
   inset: 0;

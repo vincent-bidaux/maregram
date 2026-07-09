@@ -165,6 +165,32 @@ h1 {
   flex-shrink: 0;
 }
 
+.refresh-wrap {
+  display: inline-block;
+}
+
+/* Taille calée sur la hauteur des chiffres (cap height ≈ 0.7em), posé sur la
+   ligne de base comme eux, avec une petite respiration de part et d'autre */
+.refresh-pie {
+  width: 0.7em;
+  height: 0.7em;
+  margin: 0 0.1em 0 0.3em;
+  opacity: 0.7;
+}
+
+.refresh-pie .pie {
+  animation: refresh-pie-empty 60s linear forwards;
+}
+
+@keyframes refresh-pie-empty {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 50.27;
+  }
+}
+
 .trend {
   font-size: 1rem;
   color: var(--muted);

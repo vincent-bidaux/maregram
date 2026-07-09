@@ -86,6 +86,19 @@ function moonInnerSvg(idx) {
 const moonSvg = (date, size) =>
   `<svg viewBox="0 0 12 12" width="${size}" height="${size}" aria-hidden="true">${moonInnerSvg(moonPhaseIndex(date))}</svg>`;
 
+/**
+ * Compte à rebours du rafraîchissement : disque plein qui se vide en
+ * REFRESH_INTERVAL_MS (technique du cercle à stroke épais : r=8 et
+ * stroke-width=16 couvrent tout le disque, dasharray = 2πr ≈ 50.27).
+ * L'animation CSS repart à chaque render, qui re-arme aussi le timer.
+ */
+const REFRESH_INTERVAL_MS = 60_000;
+const refreshPieSvg = () => `
+  <svg class="refresh-pie" viewBox="0 0 32 32" aria-hidden="true">
+    <circle cx="16" cy="16" r="15" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+    <circle class="pie" cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="16" stroke-dasharray="50.27" transform="rotate(-90 16 16)"/>
+  </svg>`;
+
 const STATION_DISPLAY_NAMES = {
   "la-rochelle-pallice": "LA ROCHELLE - PALLICE",
 };
@@ -736,7 +749,7 @@ async function render() {
         </div>
         <div class="now-row">
           <p class="now-line">
-            ${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })} · ${fmtTime(now)} ·
+            ${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })} · ${fmtTime(now)}<span class="refresh-wrap" title="${tr("Mise à jour de la page dans 1 min", "Page refreshes in 1 min")}">${refreshPieSvg()}</span> ·
             ${current ? fmtHeight(current.height) : "—"}
             <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
           </p>
@@ -793,6 +806,7 @@ async function render() {
       <div class="card"><p class="status">${tr("Erreur de chargement :", "Loading error:")} ${err.message}</p></div>
     `;
   }
+  scheduleRefresh();
 }
 
 function setupBeachCards(openDetailIds = new Set()) {
@@ -837,14 +851,20 @@ function setupCurveScroll(initialScroll = null) {
   });
 }
 
-render();
-
 // Rafraîchit l'instant présent (point rouge, statuts, temps restant) sans
-// perdre l'état UI ; suspendu pendant que le panneau de réglages est ouvert
+// perdre l'état UI. Timer re-armé à chaque render pour rester synchrone avec
+// l'indicateur visuel ; différé pendant que le panneau de réglages est ouvert
 // pour ne pas casser un drag ou une saisie en cours.
-setInterval(() => {
-  if (!settingsOpen) render();
-}, 60_000);
+let refreshTimer = null;
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    if (settingsOpen) scheduleRefresh();
+    else render();
+  }, REFRESH_INTERVAL_MS);
+}
+
+render();
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !settingsOpen) render();
 });

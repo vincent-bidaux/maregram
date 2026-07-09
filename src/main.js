@@ -117,9 +117,39 @@ function measureTextWidth(text, font) {
 const PX_PER_DAY = 320;
 const CURVE_H = 210;
 // Zone sous les tranches : les tranches (jours + évènements) s'arrêtent au
-// même niveau (CURVE_H), puis le triangle indicateur, puis le libellé, chacun
-// sous le précédent avec un peu d'air
-const EVENT_BAND_H = 34;
+// même niveau (CURVE_H), puis le triangle indicateur, puis le libellé (1 ou 2
+// lignes selon sa longueur), chacun sous le précédent avec un peu d'air
+const EVENT_BAND_H_1 = 34;
+const EVENT_BAND_H_2 = 46;
+const EVENT_LINE_H = 11;
+const EVENT_LABEL_FONT = "9.5px system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+const eventLabelText = (ev) =>
+  typeof ev.label === "string" ? ev.label : ev.label[LANG] || ev.label.fr;
+
+/**
+ * Découpe un libellé d'évènement sur 2 lignes s'il dépasse maxWidth, en
+ * coupant de préférence sur " · " (garde les noms d'artistes entiers), sinon
+ * sur les espaces, au point le plus proche du milieu. Sinon, une seule ligne.
+ */
+function wrapEventLabel(text, maxWidth) {
+  if (measureTextWidth(text, EVENT_LABEL_FONT) <= maxWidth) return [text];
+  const sep = text.includes(" · ") ? " · " : " ";
+  const parts = text.split(sep);
+  if (parts.length < 2) return [text];
+  const full = measureTextWidth(text, EVENT_LABEL_FONT);
+  let bestI = 1;
+  let bestDiff = Infinity;
+  for (let i = 1; i < parts.length; i++) {
+    const w1 = measureTextWidth(parts.slice(0, i).join(sep), EVENT_LABEL_FONT);
+    const diff = Math.abs(w1 - full / 2);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestI = i;
+    }
+  }
+  return [parts.slice(0, bestI).join(sep), parts.slice(bestI).join(sep)];
+}
 
 /**
  * Évènements temporels affichés en superposition de la frise (préfiguration
@@ -201,7 +231,6 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
 
   const w = nbDays * PX_PER_DAY;
   const h = CURVE_H;
-  const totalH = CURVE_H + EVENT_BAND_H;
   const topLabelBand = 64; // libellé du jour + libellé de pic sans collision
   const bottomLabelBand = 50;
   const heights = levels.map((p) => p.height);
@@ -217,6 +246,22 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
   const path = levels
     .map((p, i) => `${i === 0 ? "M" : "L"} ${x(new Date(p.time).getTime()).toFixed(1)} ${y(p.height).toFixed(1)}`)
     .join(" ");
+
+  // Pré-calcul des évènements visibles + découpe éventuelle du libellé sur 2
+  // lignes (si plus long que 2× la largeur de sa tranche). La hauteur de la
+  // bande sous les tranches en dépend.
+  const eventsData = [];
+  if (showEvents) {
+    for (const ev of TIMELINE_EVENTS) {
+      const ex0 = x(new Date(ev.start).getTime());
+      const ex1 = x(new Date(ev.end).getTime());
+      if (ex1 < 0 || ex0 > w) continue;
+      const lines = wrapEventLabel(eventLabelText(ev), 2 * (ex1 - ex0));
+      eventsData.push({ ev, ex0, ex1, ecx: (ex0 + ex1) / 2, lines });
+    }
+  }
+  const twoLineEvents = eventsData.some((e) => e.lines.length > 1);
+  const totalH = CURVE_H + (twoLineEvents ? EVENT_BAND_H_2 : EVENT_BAND_H_1);
 
   // Sections par jour : bande alternée + libellé + séparateur
   let daySections = "";
@@ -259,19 +304,20 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
   // bas de tranche, puis dans la bande dédiée : triangle indicateur pointant
   // le milieu de la tranche + libellé
   let eventsSvg = "";
-  if (showEvents) {
-    for (const ev of TIMELINE_EVENTS) {
-      const ex0 = x(new Date(ev.start).getTime());
-      const ex1 = x(new Date(ev.end).getTime());
-      if (ex1 < 0 || ex0 > w) continue;
-      const ecx = (ex0 + ex1) / 2;
-      eventsSvg += `
-        <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
-        <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 16})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
-        <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
-        <text x="${ecx.toFixed(1)}" y="${totalH - 8}" class="event-label">${typeof ev.label === "string" ? ev.label : ev.label[LANG] || ev.label.fr}</text>
-      `;
-    }
+  for (const { ev, ex0, ex1, ecx, lines } of eventsData) {
+    // dernière ligne calée en bas de bande, les autres empilées au-dessus
+    const linesSvg = lines
+      .map((line, i) => {
+        const ly = totalH - 8 - (lines.length - 1 - i) * EVENT_LINE_H;
+        return `<text x="${ecx.toFixed(1)}" y="${ly.toFixed(1)}" class="event-label">${esc(line)}</text>`;
+      })
+      .join("");
+    eventsSvg += `
+      <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
+      <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 16})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
+      <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
+      ${linesSvg}
+    `;
   }
 
   // Libellés de toutes les pleines/basses mers

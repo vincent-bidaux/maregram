@@ -116,9 +116,10 @@ function measureTextWidth(text, font) {
 
 const PX_PER_DAY = 320;
 const CURVE_H = 210;
-// Bande réservée sous la frise pour les libellés d'évènements (overlay) :
-// petit triangle indicateur + texte
-const EVENT_BAND_H = 22;
+// Zone sous les tranches : les tranches (jours + évènements) s'arrêtent au
+// même niveau (CURVE_H), puis le triangle indicateur, puis le libellé, chacun
+// sous le précédent avec un peu d'air
+const EVENT_BAND_H = 34;
 
 /**
  * Évènements temporels affichés en superposition de la frise (préfiguration
@@ -186,10 +187,10 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
     const d0 = new Date(rangeStart.getTime() + i * 86400000);
     const bx0 = x(d0.getTime());
     if (i % 2 === 1) {
-      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${PX_PER_DAY}" height="${totalH}" fill="rgba(255,255,255,0.03)" />`;
+      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${PX_PER_DAY}" height="${h}" fill="rgba(255,255,255,0.03)" />`;
     }
     if (i > 0) {
-      daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${totalH}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
+      daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
     // Coefficient estimé du jour, affiché à la suite de la date
     const dayEndTs = d0.getTime() + 86400000;
@@ -230,8 +231,8 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
       eventsSvg += `
         <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
         <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
-        <path d="M ${(ecx - 4).toFixed(1)} ${h + 9} L ${(ecx + 4).toFixed(1)} ${h + 9} L ${ecx.toFixed(1)} ${h + 3} Z" fill="rgba(250,204,21,0.55)" />
-        <text x="${ecx.toFixed(1)}" y="${totalH - 4}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
+        <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
+        <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
       `;
     }
   }

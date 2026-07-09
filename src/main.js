@@ -23,13 +23,14 @@ import {
   resetAll,
   buildBeachList,
 } from "./settings.js";
+import { LANG, setLang, tr, dateLocale, trWaterQuality } from "./i18n.js";
 
 const app = document.getElementById("app");
 
 const fmtTime = (d) =>
-  new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  new Date(d).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" });
 const fmtDate = (d) =>
-  new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  new Date(d).toLocaleDateString(dateLocale(), { weekday: "short", day: "numeric", month: "short" });
 const fmtHeight = (h) => `${h.toFixed(2)} m`;
 const fmtDuration = (ms) => {
   const totalMinutes = Math.max(0, Math.round(ms / 60000));
@@ -42,16 +43,16 @@ const esc = (s) =>
 const fmtDayLabel = (d, today) => {
   const isToday = d.toDateString() === today.toDateString();
   const isTomorrow = d.toDateString() === new Date(today.getTime() + 86400000).toDateString();
-  if (isToday) return "Aujourd'hui";
-  if (isTomorrow) return "Demain";
-  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  if (isToday) return tr("Aujourd'hui", "Today");
+  if (isTomorrow) return tr("Demain", "Tomorrow");
+  return d.toLocaleDateString(dateLocale(), { weekday: "long", day: "numeric", month: "long" });
 };
 
 function trendLabel(levels, now) {
   const idx = levels.findIndex((p) => new Date(p.time) > now);
   if (idx < 1) return "";
   const rising = levels[idx].height > levels[idx - 1].height;
-  return rising ? "montante ↗" : "descendante ↘";
+  return rising ? tr("montante ↗", "rising ↗") : tr("descendante ↘", "falling ↘");
 }
 
 // Phase lunaire approximative (précision ~1 jour, suffisante pour une icône).
@@ -111,7 +112,7 @@ const TIMELINE_EVENTS = [
   {
     start: "2026-07-19T21:00:00+02:00",
     end: "2026-07-19T23:00:00+02:00",
-    label: "Finale de la coupe du monde",
+    label: { fr: "Finale de la coupe du monde", en: "World Cup final" },
     icon: "trophy",
   },
 ];
@@ -209,7 +210,7 @@ function curveSvg(levels, tides, now, beaches = []) {
     eventsSvg += `
       <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(255,255,255,0.08)" />
       <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
-      <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label}</text>
+      <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
     `;
   }
 
@@ -319,8 +320,11 @@ function tideListRow(tides, now) {
   if (avgAmplitude != null) {
     const coeff = approxCoefficient(avgAmplitude);
     amplitudeHtml = `
-      <p class="meta amplitude" title="Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100)">
-        Coefficient ≈ ${coeff}* · Amplitude moyenne aujourd'hui ≈ ${avgAmplitude.toFixed(2)} m
+      <p class="meta amplitude" title="${tr(
+        "Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100)",
+        "Estimated from today's tidal range, calibrated on the port's published characteristic levels (≈ 5.65 m range at coefficient 100)"
+      )}">
+        ${tr("Coefficient", "Coefficient")} ≈ ${coeff}* · ${tr("Amplitude moyenne aujourd'hui", "Mean range today")} ≈ ${avgAmplitude.toFixed(2)} m
       </p>
     `;
   }
@@ -370,25 +374,25 @@ function settingsPanelHtml(beaches) {
       const starDisabled = !b.favorite && favoriteCount >= MAX_FAVORITES;
       return `
         <div class="settings-beach-row" data-beach-id="${b.id}">
-          <button type="button" class="drag-handle" aria-label="Réordonner">${DRAG_HANDLE_ICON}</button>
+          <button type="button" class="drag-handle" aria-label="${tr("Réordonner", "Reorder")}">${DRAG_HANDLE_ICON}</button>
           <div class="settings-beach-main">
             <div class="settings-beach-top">
-              <button type="button" class="fav-star ${b.favorite ? "active" : ""}" ${starDisabled ? "disabled" : ""} aria-label="Favori">${b.favorite ? "★" : "☆"}</button>
-              <button type="button" class="color-swatch" data-color="${b.color}" style="background:${b.color}" aria-label="Changer la couleur"></button>
+              <button type="button" class="fav-star ${b.favorite ? "active" : ""}" ${starDisabled ? "disabled" : ""} aria-label="${tr("Favori", "Favourite")}">${b.favorite ? "★" : "☆"}</button>
+              <button type="button" class="color-swatch" data-color="${b.color}" style="background:${b.color}" aria-label="${tr("Changer la couleur", "Change colour")}"></button>
               <span class="settings-row-label">${esc(b.name)}</span>
-              ${b.custom ? `<button type="button" class="remove-custom" aria-label="Supprimer">✕</button>` : ""}
+              ${b.custom ? `<button type="button" class="remove-custom" aria-label="${tr("Supprimer", "Remove")}">✕</button>` : ""}
             </div>
             ${colorPaletteHtml(b.id)}
             <div class="settings-beach-bottom">
-              <label class="settings-field" title="Temps de trajet jusqu'à ce lieu (pour l'heure de départ)">
-                <span class="field-label">Distance</span>
+              <label class="settings-field" title="${tr("Temps de trajet jusqu'à ce lieu (pour l'heure de départ)", "Travel time to this spot (used for the leave-by time)")}">
+                <span class="field-label">${tr("Distance", "Distance")}</span>
                 <span class="settings-row-input">
                   <input type="number" step="5" min="0" max="240" value="${b.travel_minutes}" data-field="travel_minutes" />
                   <span>min</span>
                 </span>
               </label>
-              <label class="settings-field" title="Hauteur d'eau minimale pour se baigner">
-                <span class="field-label">Seuil</span>
+              <label class="settings-field" title="${tr("Hauteur d'eau minimale pour se baigner", "Minimum water height for swimming")}">
+                <span class="field-label">${tr("Seuil", "Threshold")}</span>
                 <span class="settings-row-input">
                   <input type="number" step="0.05" min="0" max="10" value="${b.swim_threshold_m.toFixed(2)}" data-field="swim_threshold_m" />
                   <span>m</span>
@@ -405,28 +409,36 @@ function settingsPanelHtml(beaches) {
     <div class="settings-overlay ${settingsOpen ? "open" : ""}">
       <div class="settings-panel">
         <div class="settings-head">
-          <h2>Réglages</h2>
-          <button class="settings-close" type="button" aria-label="Fermer">✕</button>
+          <h2>${tr("Réglages", "Settings")}</h2>
+          <button class="settings-close" type="button" aria-label="${tr("Fermer", "Close")}">✕</button>
         </div>
         <div class="settings-body">
-          <h3>Lieux de baignade</h3>
+          <h3>${tr("Langue", "Language")}</h3>
+          <div class="lang-toggle">
+            <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
+            <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
+          </div>
+
+          <h3>${tr("Lieux de baignade", "Swimming spots")}</h3>
           <p class="meta">
-            L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner —
-            l'ordre s'applique à toute l'app. Réglages enregistrés sur cet appareil seulement.
+            ${tr(
+              `L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner — l'ordre s'applique à toute l'app. Réglages enregistrés sur cet appareil seulement.`,
+              `The star adds the spot to the graph (max ${MAX_FAVORITES}). Drag the handle to reorder — the order applies across the app. Settings are stored on this device only.`
+            )}
           </p>
           <div class="settings-beach-list">${rows}</div>
 
-          <h3>Ajouter un lieu</h3>
+          <h3>${tr("Ajouter un lieu", "Add a spot")}</h3>
           <form class="add-beach-form">
-            <input type="text" name="name" placeholder="Nom du lieu" required />
+            <input type="text" name="name" placeholder="${tr("Nom du lieu", "Spot name")}" required />
             <span class="settings-row-input">
               <input type="number" name="threshold" step="0.05" min="0" max="10" placeholder="3.00" required />
               <span>m</span>
             </span>
-            <button type="submit">Ajouter</button>
+            <button type="submit">${tr("Ajouter", "Add")}</button>
           </form>
 
-          <button class="settings-reset" type="button">Réinitialiser les valeurs par défaut</button>
+          <button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>
         </div>
       </div>
     </div>
@@ -451,6 +463,15 @@ function setupSettingsPanel() {
   document.body.classList.toggle("modal-open", settingsOpen);
 
   openBtn.addEventListener("click", () => setOpen(true));
+
+  overlay.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const changed = btn.dataset.lang !== LANG;
+      setLang(btn.dataset.lang); // persiste le choix explicite même sans changement
+      if (changed) render();
+    });
+  });
+
   closeBtn.addEventListener("click", () => setOpen(false));
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) setOpen(false);
@@ -594,42 +615,42 @@ function beachStatus(beach, levels, now) {
     const arrivalIfNow = new Date(now.getTime() + travel * 60000);
     let label = null;
     if (current && arrivalIfNow <= current.end) {
-      label = "maintenant";
+      label = tr("maintenant", "now");
     } else if (next) {
       const dep = departureTime(next.start, travel);
-      label = dep <= now ? "maintenant" : fmtTime(dep);
+      label = dep <= now ? tr("maintenant", "now") : fmtTime(dep);
     }
-    if (label) departHtml = `<p class="meta">Partir vers : <span class="dep">${label}</span></p>`;
+    if (label) departHtml = `<p class="meta">${tr("Partir vers :", "Leave around:")} <span class="dep">${label}</span></p>`;
   }
 
   let statusClass, symbol, statusText;
   if (current) {
     statusClass = "ok";
     symbol = "✓";
-    statusText = `Baignade possible<br /><span class="status-until">jusqu'à ${fmtTime(current.end)}</span>`;
+    statusText = `${tr("Baignade possible", "Swimming possible")}<br /><span class="status-until">${tr("jusqu'à", "until")} ${fmtTime(current.end)}</span>`;
   } else if (next && next.start.toDateString() === now.toDateString()) {
     statusClass = "warn";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)}</span>`;
+    statusText = `${tr("Pas maintenant", "Not now")}<br /><span class="status-until">${tr("à partir de", "from")} ${fmtTime(next.start)}</span>`;
   } else if (next) {
     statusClass = "no";
     symbol = "⚠";
-    statusText = `Pas maintenant<br /><span class="status-until">à partir de ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
+    statusText = `${tr("Pas maintenant", "Not now")}<br /><span class="status-until">${tr("à partir de", "from")} ${fmtTime(next.start)} (${fmtDate(next.start)})</span>`;
   } else {
     statusClass = "no";
     symbol = "✕";
-    statusText = `Pas de créneau à venir dans les données chargées`;
+    statusText = tr("Pas de créneau à venir dans les données chargées", "No upcoming window in the loaded data");
   }
   const activeWindow = current || next;
   let durationHtml = "";
   if (activeWindow && activeWindow.end - activeWindow.start > MAX_PLAUSIBLE_WINDOW_MS) {
     // Seuil jamais franchi dans les données chargées (plage "toujours baignable") :
     // la fenêtre calculée n'est pas bornée par la marée, donc pas de vraie durée à afficher.
-    durationHtml = `<p class="meta">Baignade possible en continu sur toute la marée</p>`;
+    durationHtml = `<p class="meta">${tr("Baignade possible en continu sur toute la marée", "Swimmable throughout the whole tide")}</p>`;
   } else if (activeWindow) {
-    durationHtml = `<p class="meta">Durée de baignade : ${fmtDuration(activeWindow.end - activeWindow.start)}</p>`;
+    durationHtml = `<p class="meta">${tr("Durée de baignade :", "Swim window:")} ${fmtDuration(activeWindow.end - activeWindow.start)}</p>`;
     if (current) {
-      durationHtml += `<p class="meta">Temps restant : ${fmtDuration(activeWindow.end - now)}</p>`;
+      durationHtml += `<p class="meta">${tr("Temps restant :", "Time left:")} ${fmtDuration(activeWindow.end - now)}</p>`;
     }
   }
 
@@ -643,23 +664,23 @@ function beachStatus(beach, levels, now) {
     : "";
 
   const detailsHtml = `
-    <p class="meta"><span class="icon-arrows">↕</span> Seuil : ${fmtHeight(beach.swim_threshold_m)}</p>
-    ${beach.swimmable_at_low_tide ? `<p class="meta">Baignable même à marée basse</p>` : ""}
-    ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> Surveillance : ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
-    ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> Qualité de l'eau<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${wq.latest_classification}</span></p>` : ""}
+    <p class="meta"><span class="icon-arrows">↕</span> ${tr("Seuil :", "Threshold:")} ${fmtHeight(beach.swim_threshold_m)}</p>
+    ${beach.swimmable_at_low_tide ? `<p class="meta">${tr("Baignable même à marée basse", "Swimmable even at low tide")}</p>` : ""}
+    ${beach.surveillance ? `<p class="meta"><span class="icon-flag">⚑</span> ${tr("Surveillance :", "Lifeguards:")} ${beach.surveillance.months}, ${beach.surveillance.hours}</p>` : ""}
+    ${wq ? `<p class="meta wq-row"><span class="icon-drop">💧</span> ${tr("Qualité de l'eau", "Water quality")}<br /><span class="inline-status ${wqStatusClass}">${wqSymbol} ${trWaterQuality(wq.latest_classification)}</span></p>` : ""}
     ${beach.note ? `<p class="meta">${beach.note}</p>` : ""}
     ${hazardsHtml}
   `;
 
   return `
     <div class="card beach" data-beach-id="${beach.id}">
-      ${beach.favorite ? `<span class="fav-badge" title="Favori (affiché sur le graph)">★</span>` : ""}
+      ${beach.favorite ? `<span class="fav-badge" title="${tr("Favori (affiché sur le graph)", "Favourite (shown on the graph)")}">★</span>` : ""}
       <h3><span class="legend-dot" style="background:${beach.color}"></span>${esc(beach.name)}</h3>
       <p class="status ${statusClass}">${symbol} ${statusText}</p>
       ${departHtml}
       ${durationHtml}
       <div class="beach-details" hidden>${detailsHtml}</div>
-      <button type="button" class="info-toggle" aria-label="Plus d'infos">${INFO_ICON}</button>
+      <button type="button" class="info-toggle" aria-label="${tr("Plus d'infos", "More info")}">${INFO_ICON}</button>
     </div>
   `;
 }
@@ -695,8 +716,13 @@ async function render() {
     const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
 
     const staleBanner = dataStale
-      ? `<div class="stale-banner">⚠ Données de marée expirées (dernier point : ${fmtDate(levels[levels.length - 1].time)} ${fmtTime(levels[levels.length - 1].time)}). Relancer <code>scripts/fetch_api_maree.py</code> puis redéployer.</div>`
+      ? `<div class="stale-banner">⚠ ${tr("Données de marée expirées (dernier point :", "Tide data expired (last point:")} ${fmtDate(levels[levels.length - 1].time)} ${fmtTime(levels[levels.length - 1].time)}). ${tr("Relancer", "Re-run")} <code>scripts/fetch_api_maree.py</code> ${tr("puis redéployer.", "then redeploy.")}</div>`
       : "";
+
+    document.documentElement.lang = LANG;
+
+    const tideName = (type) =>
+      type === "high" ? tr("pleine mer", "high tide") : tr("basse mer", "low tide");
 
     app.innerHTML = `
       ${staleBanner}
@@ -704,51 +730,54 @@ async function render() {
         <div class="hero-head">
           <div>
             <p class="eyebrow">${stationDisplay}</p>
-            <h1 class="app-title">Marées &amp; Seuils de baignade</h1>
+            <h1 class="app-title">${tr("Marées &amp; Seuils de baignade", "Tides &amp; Swim thresholds")}</h1>
           </div>
-          <button class="settings-btn" type="button" aria-label="Réglages">${GEAR_ICON}</button>
+          <button class="settings-btn" type="button" aria-label="${tr("Réglages", "Settings")}">${GEAR_ICON}</button>
         </div>
         <div class="now-row">
           <p class="now-line">
-            ${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · ${fmtTime(now)} ·
+            ${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })} · ${fmtTime(now)} ·
             ${current ? fmtHeight(current.height) : "—"}
             <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
           </p>
-          <span class="moon-icon-now" title="Phase lunaire du jour">${moonSvg(now, 22)}</span>
+          <span class="moon-icon-now" title="${tr("Phase lunaire du jour", "Today's moon phase")}">${moonSvg(now, 22)}</span>
         </div>
         <p class="meta">
-          ${prevEvents[0] ? `Dernière ${prevEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
-          ${nextEvents[0] ? ` · Prochaine ${nextEvents[0].type === "high" ? "pleine" : "basse"} mer : ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
+          ${prevEvents[0] ? `${tr("Dernière", "Last")} ${tideName(prevEvents[0].type)}${tr(" :", ":")} ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
+          ${nextEvents[0] ? ` · ${tr("Prochaine", "Next")} ${tideName(nextEvents[0].type)}${tr(" :", ":")} ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
         <div class="curve-wrap">
-          <button class="curve-arrow prev" aria-label="Jour précédent" type="button">‹</button>
+          <button class="curve-arrow prev" aria-label="${tr("Jour précédent", "Previous day")}" type="button">‹</button>
           <div class="curve-scroll" data-today-x="${curve.todayX}" data-px-per-day="${PX_PER_DAY}">
             ${curve.html}
           </div>
-          <button class="curve-arrow next" aria-label="Jour suivant" type="button">›</button>
-          <button class="today-btn" type="button" hidden>Aujourd'hui</button>
+          <button class="curve-arrow next" aria-label="${tr("Jour suivant", "Next day")}" type="button">›</button>
+          <button class="today-btn" type="button" hidden>${tr("Aujourd'hui", "Today")}</button>
         </div>
         ${legendHtml(favoriteBeaches)}
         ${tideListRow(tides, now)}
       </div>
-      <p class="subtitle">Station de référence : ${meta.site} · données ${meta.date_from} → ${meta.date_to}</p>
+      <p class="subtitle">${tr("Station de référence :", "Reference station:")} ${meta.site} · ${tr("données", "data")} ${meta.date_from} → ${meta.date_to}</p>
 
-      <h2>Baignade par plage</h2>
+      <h2>${tr("Baignade par plage", "Swimming by beach")}</h2>
       <div class="beach-grid">${beachesHtml}</div>
 
       <footer class="credits">
-        <p class="footnote">* Coefficient estimé à partir du marnage du jour, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice (valeur indicative, non officielle).</p>
+        <p class="footnote">* ${tr(
+          "Coefficient estimé à partir du marnage du jour, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice (valeur indicative, non officielle).",
+          "Coefficient estimated from the day's tidal range, calibrated on La Rochelle-Pallice's published characteristic levels (indicative, not official)."
+        )}</p>
         <p class="footnote">
-          Données de marée : <a href="https://api-maree.fr" target="_blank" rel="noopener">api-maree.fr</a> (licence CC-BY), calculées à partir de composantes harmoniques <a href="https://www.ifremer.fr" target="_blank" rel="noopener">IFREMER</a> / PREVIMER ·
-          Qualité des eaux de baignade : <a href="https://baignades.sante.gouv.fr" target="_blank" rel="noopener">baignades.sante.gouv.fr</a> (Ministère de la Santé / ARS) ·
-          Infos plages et surveillance : <a href="https://www.larochelle.fr" target="_blank" rel="noopener">larochelle.fr</a>
+          ${tr("Données de marée :", "Tide data:")} <a href="https://api-maree.fr" target="_blank" rel="noopener">api-maree.fr</a> ${tr("(licence CC-BY), calculées à partir de composantes harmoniques", "(CC-BY licence), computed from harmonic constituents by")} <a href="https://www.ifremer.fr" target="_blank" rel="noopener">IFREMER</a> / PREVIMER ·
+          ${tr("Qualité des eaux de baignade :", "Bathing water quality:")} <a href="https://baignades.sante.gouv.fr" target="_blank" rel="noopener">baignades.sante.gouv.fr</a> ${tr("(Ministère de la Santé / ARS)", "(French Ministry of Health / ARS)")} ·
+          ${tr("Infos plages et surveillance :", "Beach and lifeguard info:")} <a href="https://www.larochelle.fr" target="_blank" rel="noopener">larochelle.fr</a>
         </p>
         <p class="footnote">
-          Construit avec <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · Hébergé par <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
+          ${tr("Construit avec", "Built with")} <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · ${tr("Hébergé par", "Hosted on")} <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
         </p>
         <p class="footnote credits-brand">
-          Édité par larochelle-today · v09 ·
-          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank" rel="license noopener"><img src="/cc-by-nc-sa.png" alt="Licence CC BY-NC-SA 4.0" class="cc-badge" width="80" height="15" /></a>
+          ${tr("Édité par", "Published by")} larochelle-today · v09 ·
+          <a href="${tr("https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr", "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en")}" target="_blank" rel="license noopener"><img src="/cc-by-nc-sa.png" alt="${tr("Licence CC BY-NC-SA 4.0", "CC BY-NC-SA 4.0 licence")}" class="cc-badge" width="80" height="15" /></a>
         </p>
       </footer>
 
@@ -760,8 +789,8 @@ async function render() {
     setupBeachCards(openDetailIds);
   } catch (err) {
     app.innerHTML = `
-      <h1>Marées — La Rochelle</h1>
-      <div class="card"><p class="status">Erreur de chargement : ${err.message}</p></div>
+      <h1>${tr("Marées — La Rochelle", "Tides — La Rochelle")}</h1>
+      <div class="card"><p class="status">${tr("Erreur de chargement :", "Loading error:")} ${err.message}</p></div>
     `;
   }
 }

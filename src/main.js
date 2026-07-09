@@ -127,6 +127,38 @@ const EVENT_BAND_H = 34;
  * icon: clé dans EVENT_ICONS.
  */
 const TIMELINE_EVENTS = [
+  // Francofolies de La Rochelle 2026 (10-14 juillet), Scène Jean-Louis
+  // Foulquier. Début officiel 18h00 ; fin de soirée approximative (minuit).
+  {
+    start: "2026-07-10T18:00:00+02:00",
+    end: "2026-07-11T00:00:00+02:00",
+    label: "Francofolies : Gims · Youssou Ndour · Zaz · Luiza",
+    icon: "music",
+  },
+  {
+    start: "2026-07-11T18:00:00+02:00",
+    end: "2026-07-12T00:00:00+02:00",
+    label: "Francofolies : Niska · Jok'Air · L2B · La Mano 1.9",
+    icon: "music",
+  },
+  {
+    start: "2026-07-12T18:00:00+02:00",
+    end: "2026-07-13T00:00:00+02:00",
+    label: "Francofolies : Orelsan · Gaël Faye · Skip The Use · Miki",
+    icon: "music",
+  },
+  {
+    start: "2026-07-13T18:00:00+02:00",
+    end: "2026-07-14T00:00:00+02:00",
+    label: "Francofolies : Aya Nakamura · Louane · Helena · Marguerite",
+    icon: "music",
+  },
+  {
+    start: "2026-07-14T18:00:00+02:00",
+    end: "2026-07-15T00:00:00+02:00",
+    label: "Francofolies : Mika · Feu! Chatterton · Gaëtan Roussel · Sam Sauvage",
+    icon: "music",
+  },
   {
     start: "2026-07-19T21:00:00+02:00",
     end: "2026-07-19T23:00:00+02:00",
@@ -142,6 +174,11 @@ const EVENT_ICONS = {
     <path d="M3.2 2 C1.4 2 1.4 4.2 3.4 4.6 M8.8 2 c1.8 0 1.8 2.2 -0.2 2.6" stroke="#fff" stroke-width="0.7" fill="none"/>
     <rect x="5.3" y="6" width="1.4" height="2.4"/>
     <rect x="3.6" y="8.4" width="4.8" height="1.2" rx="0.3"/>
+  `,
+  music: `
+    <ellipse cx="3.9" cy="9.1" rx="2.4" ry="1.8"/>
+    <rect x="5.9" y="2.2" width="1.1" height="7.1"/>
+    <path d="M7 2.2 c2.4 0.4 3 2.2 2.1 4 c0.3 -1.8 -0.5 -2.8 -2.1 -3 z"/>
   `,
 };
 
@@ -232,7 +269,7 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
         <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
         <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 16})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
         <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
-        <text x="${ecx.toFixed(1)}" y="${totalH - 8}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
+        <text x="${ecx.toFixed(1)}" y="${totalH - 8}" class="event-label">${typeof ev.label === "string" ? ev.label : ev.label[LANG] || ev.label.fr}</text>
       `;
     }
   }

@@ -24,10 +24,23 @@ function loadRaw() {
       overrides: data?.overrides || {},
       order: data?.order || [],
       customBeaches: data?.customBeaches || [],
+      prefs: data?.prefs || {},
     };
   } catch {
-    return { overrides: {}, order: [], customBeaches: [] };
+    return { overrides: {}, order: [], customBeaches: [], prefs: {} };
   }
+}
+
+/** Préférences d'affichage globales (défauts appliqués ici). */
+export function getPrefs() {
+  const { prefs } = loadRaw();
+  return { showEvents: prefs.showEvents ?? true };
+}
+
+export function setShowEvents(value) {
+  update((s) => {
+    s.prefs = { ...s.prefs, showEvents: value };
+  });
 }
 
 function saveRaw(data) {

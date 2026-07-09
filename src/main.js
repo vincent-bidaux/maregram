@@ -13,6 +13,8 @@ import {
 import {
   MAX_FAVORITES,
   COLOR_PALETTE,
+  getPrefs,
+  setShowEvents,
   setThreshold,
   setTravelMinutes,
   setColor,
@@ -87,16 +89,17 @@ const moonSvg = (date, size) =>
   `<svg viewBox="0 0 12 12" width="${size}" height="${size}" aria-hidden="true">${moonInnerSvg(moonPhaseIndex(date))}</svg>`;
 
 /**
- * Compte à rebours du rafraîchissement : disque plein qui se vide en
- * REFRESH_INTERVAL_MS (technique du cercle à stroke épais : r=8 et
- * stroke-width=16 couvrent tout le disque, dasharray = 2πr ≈ 50.27).
+ * Compte à rebours du rafraîchissement : cadran avec une aiguille qui fait un
+ * tour complet (sens horaire) en REFRESH_INTERVAL_MS — une forme d'horloge,
+ * pas de remplissage, pour ne pas être confondu avec les phases de lune.
  * L'animation CSS repart à chaque render, qui re-arme aussi le timer.
  */
 const REFRESH_INTERVAL_MS = 60_000;
 const refreshPieSvg = () => `
   <svg class="refresh-pie" viewBox="0 0 32 32" aria-hidden="true">
-    <circle cx="16" cy="16" r="15" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>
-    <circle class="pie" cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="16" stroke-dasharray="50.27" transform="rotate(-90 16 16)"/>
+    <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5" opacity="0.35"/>
+    <g class="hand"><line x1="16" y1="16" x2="16" y2="5" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></g>
+    <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
   </svg>`;
 
 const STATION_DISPLAY_NAMES = {
@@ -113,8 +116,9 @@ function measureTextWidth(text, font) {
 
 const PX_PER_DAY = 320;
 const CURVE_H = 210;
-// Bande réservée sous la frise pour les libellés d'évènements (overlay)
-const EVENT_BAND_H = 18;
+// Bande réservée sous la frise pour les libellés d'évènements (overlay) :
+// petit triangle indicateur + texte
+const EVENT_BAND_H = 22;
 
 /**
  * Évènements temporels affichés en superposition de la frise (préfiguration
@@ -146,7 +150,7 @@ const EVENT_ICONS = {
  * marqueur rouge pour l'instant présent. Rendu en pixels réels (pas de
  * viewBox mise à l'échelle) pour être placé dans un conteneur scrollable.
  */
-function curveSvg(levels, tides, now, beaches = []) {
+function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
   if (levels.length < 2) return { html: "", totalWidth: 0, todayX: 0 };
 
   const rangeStart = new Date(levels[0].time);
@@ -212,19 +216,24 @@ function curveSvg(levels, tides, now, beaches = []) {
     daySections += `<g transform="translate(${moonX.toFixed(1)}, 5.5) scale(0.75)">${moonInnerSvg(moonPhaseIndex(d0))}</g>`;
   }
 
-  // Évènements en superposition : tranche verticale sur toute la hauteur de
-  // la frise, icône discrète en bas de tranche, libellé dans la bande dédiée
+  // Évènements en superposition : tranche jaune translucide sur toute la
+  // hauteur de la frise (comme le fond des jours alternés), icône discrète en
+  // bas de tranche, puis dans la bande dédiée : triangle indicateur pointant
+  // le milieu de la tranche + libellé
   let eventsSvg = "";
-  for (const ev of TIMELINE_EVENTS) {
-    const ex0 = x(new Date(ev.start).getTime());
-    const ex1 = x(new Date(ev.end).getTime());
-    if (ex1 < 0 || ex0 > w) continue;
-    const ecx = (ex0 + ex1) / 2;
-    eventsSvg += `
-      <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(255,255,255,0.08)" />
-      <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
-      <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
-    `;
+  if (showEvents) {
+    for (const ev of TIMELINE_EVENTS) {
+      const ex0 = x(new Date(ev.start).getTime());
+      const ex1 = x(new Date(ev.end).getTime());
+      if (ex1 < 0 || ex0 > w) continue;
+      const ecx = (ex0 + ex1) / 2;
+      eventsSvg += `
+        <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
+        <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
+        <path d="M ${(ecx - 4).toFixed(1)} ${h + 9} L ${(ecx + 4).toFixed(1)} ${h + 9} L ${ecx.toFixed(1)} ${h + 3} Z" fill="rgba(250,204,21,0.55)" />
+        <text x="${ecx.toFixed(1)}" y="${totalH - 4}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
+      `;
+    }
   }
 
   // Libellés de toutes les pleines/basses mers
@@ -426,12 +435,6 @@ function settingsPanelHtml(beaches) {
           <button class="settings-close" type="button" aria-label="${tr("Fermer", "Close")}">✕</button>
         </div>
         <div class="settings-body">
-          <h3>${tr("Langue", "Language")}</h3>
-          <div class="lang-toggle">
-            <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
-            <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
-          </div>
-
           <h3>${tr("Lieux de baignade", "Swimming spots")}</h3>
           <p class="meta">
             ${tr(
@@ -451,7 +454,19 @@ function settingsPanelHtml(beaches) {
             <button type="submit">${tr("Ajouter", "Add")}</button>
           </form>
 
+          <h3>${tr("Affichage", "Display")}</h3>
+          <label class="settings-toggle">
+            <input type="checkbox" class="events-toggle" ${getPrefs().showEvents ? "checked" : ""} />
+            <span>${tr("Afficher les événements locaux sur la timeline", "Show local events on the timeline")}</span>
+          </label>
+
           <button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>
+
+          <h3>${tr("Langue", "Language")}</h3>
+          <div class="lang-toggle">
+            <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
+            <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
+          </div>
         </div>
       </div>
     </div>
@@ -476,6 +491,14 @@ function setupSettingsPanel() {
   document.body.classList.toggle("modal-open", settingsOpen);
 
   openBtn.addEventListener("click", () => setOpen(true));
+
+  const eventsToggle = overlay.querySelector(".events-toggle");
+  if (eventsToggle) {
+    eventsToggle.addEventListener("change", () => {
+      setShowEvents(eventsToggle.checked);
+      render();
+    });
+  }
 
   overlay.querySelectorAll(".lang-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -725,7 +748,7 @@ async function render() {
       .map((b) => beachStatus(b, levels, now))
       .join("");
 
-    const curve = curveSvg(levels, tides, now, favoriteBeaches);
+    const curve = curveSvg(levels, tides, now, favoriteBeaches, getPrefs().showEvents);
     const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
 
     const staleBanner = dataStale

@@ -230,9 +230,9 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
       const ecx = (ex0 + ex1) / 2;
       eventsSvg += `
         <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
-        <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
+        <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 16})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
         <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
-        <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
+        <text x="${ecx.toFixed(1)}" y="${totalH - 8}" class="event-label">${ev.label[LANG] || ev.label.fr}</text>
       `;
     }
   }

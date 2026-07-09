@@ -667,7 +667,7 @@ async function render() {
         </div>
         <div class="now-row">
           <p class="now-line">
-            ${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ·
+            ${now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · ${fmtTime(now)} ·
             ${current ? fmtHeight(current.height) : "—"}
             <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
           </p>

@@ -99,6 +99,32 @@ function measureTextWidth(text, font) {
 
 const PX_PER_DAY = 320;
 const CURVE_H = 210;
+// Bande réservée sous la frise pour les libellés d'évènements (overlay)
+const EVENT_BAND_H = 18;
+
+/**
+ * Évènements temporels affichés en superposition de la frise (préfiguration
+ * d'un overlay générique : évènements locaux, alertes, etc.).
+ * icon: clé dans EVENT_ICONS.
+ */
+const TIMELINE_EVENTS = [
+  {
+    start: "2026-07-19T21:00:00+02:00",
+    end: "2026-07-19T23:00:00+02:00",
+    label: "Finale de la coupe du monde",
+    icon: "trophy",
+  },
+];
+
+// Icônes 12×12, remplies en blanc translucide par le groupe appelant
+const EVENT_ICONS = {
+  trophy: `
+    <path d="M3.2 1 h5.6 v2.4 a2.8 2.8 0 0 1 -5.6 0 Z"/>
+    <path d="M3.2 2 C1.4 2 1.4 4.2 3.4 4.6 M8.8 2 c1.8 0 1.8 2.2 -0.2 2.6" stroke="#fff" stroke-width="0.7" fill="none"/>
+    <rect x="5.3" y="6" width="1.4" height="2.4"/>
+    <rect x="3.6" y="8.4" width="4.8" height="1.2" rx="0.3"/>
+  `,
+};
 
 /**
  * Courbe SVG sur toute la période chargée : sections visuelles par jour,
@@ -119,6 +145,7 @@ function curveSvg(levels, tides, now, beaches = []) {
 
   const w = nbDays * PX_PER_DAY;
   const h = CURVE_H;
+  const totalH = CURVE_H + EVENT_BAND_H;
   const topLabelBand = 64; // libellé du jour + libellé de pic sans collision
   const bottomLabelBand = 50;
   const heights = levels.map((p) => p.height);
@@ -141,10 +168,10 @@ function curveSvg(levels, tides, now, beaches = []) {
     const d0 = new Date(rangeStart.getTime() + i * 86400000);
     const bx0 = x(d0.getTime());
     if (i % 2 === 1) {
-      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${PX_PER_DAY}" height="${h}" fill="rgba(255,255,255,0.03)" />`;
+      daySections += `<rect x="${bx0.toFixed(1)}" y="0" width="${PX_PER_DAY}" height="${totalH}" fill="rgba(255,255,255,0.03)" />`;
     }
     if (i > 0) {
-      daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${h}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
+      daySections += `<line x1="${bx0.toFixed(1)}" y1="0" x2="${bx0.toFixed(1)}" y2="${totalH}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />`;
     }
     // Coefficient estimé du jour, affiché à la suite de la date
     const dayEndTs = d0.getTime() + 86400000;
@@ -169,6 +196,21 @@ function curveSvg(levels, tides, now, beaches = []) {
     daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${dayLabelText}</text>`;
     // Lune ~9px de haut, centrée sur la hauteur des capitales du libellé
     daySections += `<g transform="translate(${moonX.toFixed(1)}, 5.5) scale(0.75)">${moonInnerSvg(moonPhaseIndex(d0))}</g>`;
+  }
+
+  // Évènements en superposition : tranche verticale sur toute la hauteur de
+  // la frise, icône discrète en bas de tranche, libellé dans la bande dédiée
+  let eventsSvg = "";
+  for (const ev of TIMELINE_EVENTS) {
+    const ex0 = x(new Date(ev.start).getTime());
+    const ex1 = x(new Date(ev.end).getTime());
+    if (ex1 < 0 || ex0 > w) continue;
+    const ecx = (ex0 + ex1) / 2;
+    eventsSvg += `
+      <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(255,255,255,0.08)" />
+      <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 13})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
+      <text x="${ecx.toFixed(1)}" y="${totalH - 5}" class="event-label">${ev.label}</text>
+    `;
   }
 
   // Libellés de toutes les pleines/basses mers
@@ -206,8 +248,9 @@ function curveSvg(levels, tides, now, beaches = []) {
     .join("");
 
   const html = `
-    <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" class="curve">
+    <svg width="${w}" height="${totalH}" viewBox="0 0 ${w} ${totalH}" class="curve">
       ${daySections}
+      ${eventsSvg}
       ${thresholdLines}
       <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
       ${tideLabels}

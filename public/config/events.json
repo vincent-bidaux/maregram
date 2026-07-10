@@ -1,10 +1,225 @@
 {
   "events": [
-    { "start": "2026-07-10T18:00:00+02:00", "end": "2026-07-11T00:00:00+02:00", "label": "Francofolies : Gims · Youssou Ndour · Zaz · Luiza", "icon": "music" },
-    { "start": "2026-07-11T18:00:00+02:00", "end": "2026-07-12T00:00:00+02:00", "label": "Francofolies : Niska · Jok'Air · L2B · La Mano 1.9", "icon": "music" },
-    { "start": "2026-07-12T18:00:00+02:00", "end": "2026-07-13T00:00:00+02:00", "label": "Francofolies : Orelsan · Gaël Faye · Skip The Use · Miki", "icon": "music" },
-    { "start": "2026-07-13T18:00:00+02:00", "end": "2026-07-14T00:00:00+02:00", "label": "Francofolies : Aya Nakamura · Louane · Helena · Marguerite", "icon": "music" },
-    { "start": "2026-07-14T18:00:00+02:00", "end": "2026-07-15T00:00:00+02:00", "label": "Francofolies : Mika · Feu! Chatterton · Gaëtan Roussel · Sam Sauvage", "icon": "music" },
-    { "start": "2026-07-19T21:00:00+02:00", "end": "2026-07-19T23:00:00+02:00", "label": { "fr": "Finale de la coupe du monde", "en": "World Cup final" }, "icon": "trophy" }
+    {
+      "start": "2026-07-10T18:00:00+02:00",
+      "end": "2026-07-11T00:00:00+02:00",
+      "label": "Francofolies : Gims · Youssou Ndour · Zaz · Luiza",
+      "icon": "music"
+    },
+    {
+      "start": "2026-07-11T18:00:00+02:00",
+      "end": "2026-07-12T00:00:00+02:00",
+      "label": "Francofolies : Niska · Jok'Air · L2B · La Mano 1.9",
+      "icon": "music"
+    },
+    {
+      "start": "2026-07-12T18:00:00+02:00",
+      "end": "2026-07-13T00:00:00+02:00",
+      "label": "Francofolies : Orelsan · Gaël Faye · Skip The Use · Miki",
+      "icon": "music"
+    },
+    {
+      "start": "2026-07-13T18:00:00+02:00",
+      "end": "2026-07-14T00:00:00+02:00",
+      "label": "Francofolies : Aya Nakamura · Louane · Helena · Marguerite",
+      "icon": "music"
+    },
+    {
+      "start": "2026-07-14T18:00:00+02:00",
+      "end": "2026-07-15T00:00:00+02:00",
+      "label": "Francofolies : Mika · Feu! Chatterton · Gaëtan Roussel · Sam Sauvage",
+      "icon": "music"
+    },
+    {
+      "start": "2026-07-19T21:00:00+02:00",
+      "end": "2026-07-19T23:00:00+02:00",
+      "label": {
+        "fr": "Finale de la coupe du monde",
+        "en": "World Cup final"
+      },
+      "icon": "trophy"
+    },
+    {
+      "start": "2026-09-05T21:00:00+02:00",
+      "end": "2026-09-05T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Toulouse",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-09-12T21:00:00+02:00",
+      "end": "2026-09-12T22:35:00+02:00",
+      "label": "Stade Rochelais : Toulon - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-09-19T21:00:00+02:00",
+      "end": "2026-09-19T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Racing 92",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-09-26T21:00:00+02:00",
+      "end": "2026-09-26T22:35:00+02:00",
+      "label": "Stade Rochelais : Pau - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-10-03T21:00:00+02:00",
+      "end": "2026-10-03T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Clermont",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-10-10T21:00:00+02:00",
+      "end": "2026-10-10T22:35:00+02:00",
+      "label": "Stade Rochelais : Lyon - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-10-24T21:00:00+02:00",
+      "end": "2026-10-24T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Bordeaux-Bègles",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-10-31T21:00:00+01:00",
+      "end": "2026-10-31T22:35:00+01:00",
+      "label": "Stade Rochelais : Stade français - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-11-07T21:00:00+01:00",
+      "end": "2026-11-07T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Bayonne",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-11-28T21:00:00+01:00",
+      "end": "2026-11-28T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Perpignan",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-12-05T21:00:00+01:00",
+      "end": "2026-12-05T22:35:00+01:00",
+      "label": "Stade Rochelais : Montpellier - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-12-19T21:00:00+01:00",
+      "end": "2026-12-19T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Castres",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2026-12-26T21:00:00+01:00",
+      "end": "2026-12-26T22:35:00+01:00",
+      "label": "Stade Rochelais : Vannes - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-01-02T21:00:00+01:00",
+      "end": "2027-01-02T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Pau",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-01-23T21:00:00+01:00",
+      "end": "2027-01-23T22:35:00+01:00",
+      "label": "Stade Rochelais : Toulouse - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-01-30T21:00:00+01:00",
+      "end": "2027-01-30T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Toulon",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-02-20T21:00:00+01:00",
+      "end": "2027-02-20T22:35:00+01:00",
+      "label": "Stade Rochelais : Bayonne - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-02-27T21:00:00+01:00",
+      "end": "2027-02-27T22:35:00+01:00",
+      "label": "Stade Rochelais : La Rochelle - Stade français",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-03-20T21:00:00+01:00",
+      "end": "2027-03-20T22:35:00+01:00",
+      "label": "Stade Rochelais : Castres - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-03-27T21:00:00+01:00",
+      "end": "2027-03-27T22:35:00+01:00",
+      "label": "Stade Rochelais : Perpignan - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-04-17T21:00:00+02:00",
+      "end": "2027-04-17T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Vannes",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-04-24T21:00:00+02:00",
+      "end": "2027-04-24T22:35:00+02:00",
+      "label": "Stade Rochelais : Bordeaux-Bègles - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-05-08T21:00:00+02:00",
+      "end": "2027-05-08T22:35:00+02:00",
+      "label": "Stade Rochelais : Racing 92 - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-05-15T21:00:00+02:00",
+      "end": "2027-05-15T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Lyon",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-05-29T21:00:00+02:00",
+      "end": "2027-05-29T22:35:00+02:00",
+      "label": "Stade Rochelais : Clermont - La Rochelle",
+      "icon": "rugby",
+      "published": false
+    },
+    {
+      "start": "2027-06-05T21:00:00+02:00",
+      "end": "2027-06-05T22:35:00+02:00",
+      "label": "Stade Rochelais : La Rochelle - Montpellier",
+      "icon": "rugby",
+      "published": false
+    }
   ]
 }

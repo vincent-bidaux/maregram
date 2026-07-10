@@ -223,7 +223,7 @@ function saveAndRerender() {
 function beachRow(b, isActive) {
   return `
     <div class="beach-admin-row" data-id="${esc(b.id)}">
-      ${isActive ? `<button class="drag-h" title="Réordonner" aria-label="Réordonner">⠿</button>` : `<span class="drag-h placeholder"></span>`}
+      <button class="drag-h" title="Glisser vers Actifs/Brouillons pour publier ou dépublier, glisser dans la liste pour réordonner" aria-label="Glisser pour déplacer">⠿</button>
       <div class="beach-admin-main">
         <div class="beach-admin-top">
           <input type="color" class="f-color" value="${esc(b.color || "#5ec4ea")}" title="Couleur" />
@@ -268,7 +268,7 @@ async function renderBeaches() {
     </form>`;
 
   wireBeachEvents();
-  setupActiveDrag();
+  setupBeachDrag();
 }
 
 function wireBeachEvents() {
@@ -334,10 +334,30 @@ function wireBeachEvents() {
 }
 
 // Réordonnancement des lieux actifs par glisser-déposer (Pointer Events)
-function setupActiveDrag() {
-  const list = content().querySelector(".active-list");
-  if (!list) return;
-  list.querySelectorAll(".drag-h").forEach((handle) => {
+/**
+ * Relit l'ordre/l'appartenance réels des deux listes depuis le DOM.
+ * Important : on construit d'abord une table de correspondance à partir de
+ * l'union des deux tableaux AVANT de réassigner quoi que ce soit — sinon la
+ * ligne qui vient de changer de liste devient introuvable (le premier
+ * tableau réassigné exclut déjà l'objet, et l'autre ne l'a jamais eu).
+ */
+function commitBeachListsFromDom() {
+  const byId = new Map([...active, ...drafts].map((b) => [b.id, b]));
+  const activeIds = [...content().querySelectorAll(".active-list .beach-admin-row")].map((r) => r.dataset.id);
+  const draftIds = [...content().querySelectorAll(".draft-list .beach-admin-row")].map((r) => r.dataset.id);
+  active = activeIds.map((id) => byId.get(id)).filter(Boolean);
+  drafts = draftIds.map((id) => byId.get(id)).filter(Boolean);
+}
+
+/**
+ * Glisser-déposer unique pour les deux listes Actifs/Brouillons : une ligne
+ * se déplace librement de l'une à l'autre (ce qui publie/dépublie le lieu) et
+ * se réordonne dans la liste où elle est lâchée (l'ordre des actifs devient
+ * l'ordre par défaut de tous les utilisateurs). Le bouton "Publié/Brouillon"
+ * reste un raccourci pour qui préfère ne pas glisser.
+ */
+function setupBeachDrag() {
+  content().querySelectorAll(".drag-h").forEach((handle) => {
     handle.style.touchAction = "none";
     handle.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -347,26 +367,34 @@ function setupActiveDrag() {
 
       const onMove = (m) => {
         row.style.transform = `translateY(${m.clientY - startY}px)`;
-        for (const sib of list.querySelectorAll(".beach-admin-row")) {
-          if (sib === row) continue;
-          const r = sib.getBoundingClientRect();
-          if (m.clientY > r.top && m.clientY < r.bottom) {
-            const rows = [...list.children];
-            list.insertBefore(row, rows.indexOf(row) < rows.indexOf(sib) ? sib.nextSibling : sib);
-            row.style.transform = "translateY(0)";
-            startY = m.clientY;
-            break;
-          }
+        row.style.pointerEvents = "none"; // pour qu'elementFromPoint ignore la ligne en cours de glissement
+        const under = document.elementFromPoint(m.clientX, m.clientY);
+        row.style.pointerEvents = "";
+        const targetList = under?.closest(".beach-admin-list");
+        if (!targetList) return;
+
+        const emptyHint = targetList.querySelector(":scope > p.empty");
+        if (emptyHint) emptyHint.remove();
+
+        const sibRow = under.closest(".beach-admin-row");
+        if (sibRow && sibRow !== row && targetList.contains(sibRow)) {
+          const rows = [...targetList.querySelectorAll(".beach-admin-row")];
+          const rowIdx = rows.indexOf(row);
+          const sibIdx = rows.indexOf(sibRow);
+          targetList.insertBefore(row, rowIdx !== -1 && rowIdx < sibIdx ? sibRow.nextSibling : sibRow);
+        } else if (targetList !== row.parentElement) {
+          targetList.appendChild(row);
         }
+        row.style.transform = "translateY(0)";
+        startY = m.clientY;
       };
       const onUp = () => {
         row.classList.remove("dragging");
         row.style.transform = "";
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
-        const orderIds = [...list.querySelectorAll(".beach-admin-row")].map((r) => r.dataset.id);
-        active.sort((a, b) => orderIds.indexOf(a.id) - orderIds.indexOf(b.id));
-        saveBeachesNow();
+        commitBeachListsFromDom();
+        saveAndRerender();
       };
       document.addEventListener("pointermove", onMove);
       document.addEventListener("pointerup", onUp);

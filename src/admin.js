@@ -381,6 +381,7 @@ const EVENT_ICONS_LIST = [
   ["calendar", "📅 Agenda"],
   ["music", "♪ Musique"],
   ["trophy", "🏆 Trophée"],
+  ["rugby", "🏉 Rugby"],
 ];
 
 // Type CSV libre → clé d'icône (défaut : calendar)
@@ -388,7 +389,8 @@ function normalizeEventType(t) {
   t = (t || "").toLowerCase().trim();
   if (!t) return "calendar";
   if (/music|musiq|concert|franco/.test(t)) return "music";
-  if (/troph|sport|foot|match|coupe|rugby/.test(t)) return "trophy";
+  if (/rugby|stade rochelais/.test(t)) return "rugby";
+  if (/troph|sport|foot|match|coupe/.test(t)) return "trophy";
   return "calendar";
 }
 

@@ -257,6 +257,15 @@ const EVENT_ICONS = {
     <rect x="5.9" y="2.2" width="1.1" height="7.1"/>
     <path d="M7 2.2 c2.4 0.4 3 2.2 2.1 4 c0.3 -1.8 -0.5 -2.8 -2.1 -3 z"/>
   `,
+  rugby: `
+    <g transform="rotate(-40 6 6)">
+      <ellipse cx="6" cy="6" rx="5" ry="3"/>
+      <line x1="1.3" y1="6" x2="10.7" y2="6" stroke="#0a1622" stroke-width="0.5" opacity="0.6"/>
+      <line x1="4.7" y1="5.2" x2="4.7" y2="6.8" stroke="#0a1622" stroke-width="0.5" opacity="0.6"/>
+      <line x1="6" y1="5.2" x2="6" y2="6.8" stroke="#0a1622" stroke-width="0.5" opacity="0.6"/>
+      <line x1="7.3" y1="5.2" x2="7.3" y2="6.8" stroke="#0a1622" stroke-width="0.5" opacity="0.6"/>
+    </g>
+  `,
 };
 
 /**

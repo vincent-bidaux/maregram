@@ -199,6 +199,26 @@ h1 {
   opacity: 0.7;
 }
 
+/* Contour de fond à peine visible : juste un repère, pas un cadran plein */
+.refresh-pie .ring-base {
+  opacity: 0.1;
+}
+
+/* L'arc "se dessine" au fil de la minute, plus marqué (trait plus épais) que
+   le fond, pour qu'on sente visuellement l'écoulement du countdown */
+.refresh-pie .ring-progress {
+  opacity: 0.85;
+  stroke-dasharray: 87.96;
+  stroke-dashoffset: 87.96;
+  animation: refresh-ring-draw 60s linear forwards;
+}
+
+@keyframes refresh-ring-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .refresh-pie .hand {
   transform-box: view-box;
   transform-origin: 50% 50%;

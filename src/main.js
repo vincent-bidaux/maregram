@@ -130,7 +130,8 @@ const moonSvg = (date, size) =>
 const REFRESH_INTERVAL_MS = 60_000;
 const refreshPieSvg = () => `
   <svg class="refresh-pie" viewBox="0 0 32 32" aria-hidden="true">
-    <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5" opacity="0.35"/>
+    <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.2" class="ring-base"/>
+    <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="ring-progress" transform="rotate(-90 16 16)"/>
     <g class="hand"><line x1="16" y1="16" x2="16" y2="5" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></g>
     <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
   </svg>`;

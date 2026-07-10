@@ -34,6 +34,23 @@ import { LANG, setLang, tr, dateLocale, trWaterQuality } from "./i18n.js";
 
 const app = document.getElementById("app");
 
+// Carte admin (orange) affichée uniquement si le cookie de session admin est
+// valide (vérifié côté serveur). null tant que la vérification n'a pas répondu.
+let adminInfo = null;
+async function checkAdmin() {
+  try {
+    const r = await fetch("/api/admin/me");
+    if (!r.ok) return;
+    const info = await r.json();
+    if (info.admin) {
+      adminInfo = info;
+      render();
+    }
+  } catch {
+    // pas grave : simple visiteur
+  }
+}
+
 const fmtTime = (d) =>
   new Date(d).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" });
 const fmtDate = (d) =>
@@ -932,7 +949,19 @@ async function render() {
     const tideName = (type) =>
       type === "high" ? tr("pleine mer", "high tide") : tr("basse mer", "low tide");
 
+    const adminCard = adminInfo?.admin
+      ? `<div class="admin-card">
+           <div class="admin-card-info">
+             <strong>${tr("Espace admin", "Admin area")}</strong> ·
+             ${adminInfo.activeUsers} ${tr("actifs (15 j)", "active (15d)")} ·
+             ${adminInfo.totalUsers} ${tr("au total", "total")}
+           </div>
+           <a class="admin-card-link" href="/admin/">${tr("Console & stats →", "Console & stats →")}</a>
+         </div>`
+      : "";
+
     app.innerHTML = `
+      ${adminCard}
       ${staleBanner}
       <div class="hero-card">
         <div class="hero-head">
@@ -1068,7 +1097,10 @@ function scheduleRefresh() {
 onSession(() => {
   if (!document.hidden) render();
 });
-initSession().then(render);
+initSession().then(() => {
+  render();
+  checkAdmin();
+});
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !settingsOpen) render();

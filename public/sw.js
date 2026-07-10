@@ -8,7 +8,7 @@
  * cache des seules réponses valides, et repli ultime sur une page minimale
  * plutôt qu'une erreur.
  */
-const CACHE = "maree-lr-v2";
+const CACHE = "maree-lr-v3";
 const NAV_TIMEOUT_MS = 5000;
 
 self.addEventListener("install", (e) => {
@@ -44,12 +44,14 @@ async function handleNavigation(event) {
   try {
     const res = await withTimeout(fetch(event.request), NAV_TIMEOUT_MS);
     if (res && res.ok) {
-      event.waitUntil(cachePut("/", res.clone()));
+      // cache sous l'URL réelle (ne pas écraser "/" avec /admin/ par ex.)
+      event.waitUntil(cachePut(event.request, res.clone()));
       return res;
     }
     throw new Error(`HTTP ${res && res.status}`);
   } catch {
-    const cached = await caches.match("/", { ignoreSearch: true });
+    const cached =
+      (await caches.match(event.request, { ignoreSearch: true })) || (await caches.match("/"));
     return cached || new Response(OFFLINE_FALLBACK, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 }

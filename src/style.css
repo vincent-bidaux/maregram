@@ -43,6 +43,27 @@ h1 {
   font-size: 0.8rem;
 }
 
+.admin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: #b45309;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.admin-card-link {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .stale-banner {
   background: #5c2b2b;
   color: #f0c2c2;

@@ -153,8 +153,8 @@ const CURVE_H = 210;
 // même niveau (CURVE_H), puis le triangle indicateur, puis le libellé (1 ou 2
 // lignes selon sa longueur), chacun sous le précédent avec un peu d'air
 const EVENT_BAND_H_1 = 34;
-const EVENT_BAND_H_2 = 46;
 const EVENT_LINE_H = 11;
+const EVENT_ROW_GAP = 4;
 const EVENT_LABEL_FONT = "9.5px system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 const eventLabelText = (ev) =>
@@ -280,8 +280,11 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
     .join(" ");
 
   // Pré-calcul des évènements visibles + découpe éventuelle du libellé sur 2
-  // lignes (si plus long que 2× la largeur de sa tranche). La hauteur de la
-  // bande sous les tranches en dépend.
+  // lignes (si plus long que 2× la largeur de sa tranche), triés par heure de
+  // début. Si le libellé de deux évènements se chevauche horizontalement, le
+  // plus tardif est repoussé sur une ligne de texte en dessous (comme un
+  // planning à créneaux) : le reste de la bande — et donc de la carte —
+  // s'agrandit en conséquence.
   const eventsData = [];
   if (showEvents) {
     for (const ev of events) {
@@ -296,12 +299,39 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
         ex1 = x(eventEndMs(ev));
       }
       if (ex1 < 0 || ex0 > w) continue;
+      const ecx = (ex0 + ex1) / 2;
       const lines = wrapEventLabel(eventLabelText(ev), 2 * (ex1 - ex0));
-      eventsData.push({ ev, ex0, ex1, ecx: (ex0 + ex1) / 2, lines });
+      const labelHalfWidth = Math.max(...lines.map((l) => measureTextWidth(l, EVENT_LABEL_FONT))) / 2;
+      eventsData.push({ ev, ex0, ex1, ecx, lines, labelHalfWidth, startMs: eventStartMs(ev) });
     }
   }
-  const twoLineEvents = eventsData.some((e) => e.lines.length > 1);
-  const totalH = CURVE_H + (twoLineEvents ? EVENT_BAND_H_2 : EVENT_BAND_H_1);
+  eventsData.sort((a, b) => a.startMs - b.startMs);
+
+  // Empilement en lignes : place chaque libellé sur la première ligne où il
+  // ne chevauche pas le dernier libellé déjà posé sur cette ligne.
+  const LABEL_MARGIN = 6;
+  const rowRightEdges = [];
+  for (const e of eventsData) {
+    const left = e.ecx - e.labelHalfWidth - LABEL_MARGIN;
+    const right = e.ecx + e.labelHalfWidth + LABEL_MARGIN;
+    let row = rowRightEdges.findIndex((edge) => edge <= left);
+    if (row === -1) row = rowRightEdges.length;
+    rowRightEdges[row] = right;
+    e.row = row;
+  }
+  const numRows = rowRightEdges.length;
+  const rowLineCount = Array.from({ length: numRows }, (_, r) =>
+    Math.max(...eventsData.filter((e) => e.row === r).map((e) => e.lines.length))
+  );
+  const rowStartLine = rowLineCount.reduce((acc, count, r) => {
+    acc[r] = (acc[r - 1] ?? 0) + (r === 0 ? 0 : rowLineCount[r - 1]);
+    return acc;
+  }, []);
+  const totalContentLines = rowLineCount.reduce((a, b) => a + b, 0);
+  const totalH =
+    numRows === 0
+      ? CURVE_H + EVENT_BAND_H_1
+      : CURVE_H + 26 + (totalContentLines - 1) * EVENT_LINE_H + (numRows - 1) * EVENT_ROW_GAP + 8;
 
   // Sections par jour : bande alternée + libellé + séparateur
   let daySections = "";
@@ -344,11 +374,11 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
   // bas de tranche, puis dans la bande dédiée : triangle indicateur pointant
   // le milieu de la tranche + libellé
   let eventsSvg = "";
-  for (const { ev, ex0, ex1, ecx, lines } of eventsData) {
-    // dernière ligne calée en bas de bande, les autres empilées au-dessus
+  for (const { ev, ex0, ex1, ecx, lines, row } of eventsData) {
+    // ligne(s) empilée(s) vers le bas depuis le haut du bloc de la rangée
     const linesSvg = lines
-      .map((line, i) => {
-        const ly = totalH - 8 - (lines.length - 1 - i) * EVENT_LINE_H;
+      .map((line, j) => {
+        const ly = h + 26 + (rowStartLine[row] + j) * EVENT_LINE_H + row * EVENT_ROW_GAP;
         return `<text x="${ecx.toFixed(1)}" y="${ly.toFixed(1)}" class="event-label">${esc(line)}</text>`;
       })
       .join("");

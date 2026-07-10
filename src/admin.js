@@ -432,7 +432,7 @@ function parseEventsCsv(text) {
       errors.push(`Ligne ${i + 1} : date début invalide « ${deb} »`);
       return;
     }
-    const ev = { label: nom, start, icon: normalizeEventType(type), published: true };
+    const ev = { label: nom, start, icon: normalizeEventType(type), published: false };
     const end = fin ? parseCsvDate(fin) : null;
     if (end) ev.end = end;
     events.push(ev);
@@ -570,7 +570,7 @@ async function renderEvents() {
       <p class="muted">Format : <code>nom;date début;date fin;type</code> — une ligne par évènement.
         <strong>type</strong> (agenda / musique / trophée) et <strong>date de fin</strong> optionnels.
         Dates : <code>2026-07-15</code> ou <code>2026-07-15 22:30</code> (heure de Paris).
-        Sans date de fin → marqueur au milieu du jour. Les lignes importées sont <strong>publiées</strong>.</p>
+        Sans date de fin → marqueur au milieu du jour. Les lignes importées sont ajoutées en <strong>brouillon</strong> (à publier une par une).</p>
       <label class="csv-file-label">
         <input type="file" class="csv-file" accept=".csv,text/csv,text/plain" />
         Choisir un fichier CSV…
@@ -635,7 +635,7 @@ async function renderEvents() {
     }
     for (const ev of parsed) events.push({ ...ev, _uid: `ev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}` });
     saveEventsAndRerender();
-    const msg = `${parsed.length} évènement(s) importé(s) et publié(s)` + (errors.length ? ` · ${errors.length} ligne(s) ignorée(s)` : "");
+    const msg = `${parsed.length} évènement(s) importé(s) en brouillon` + (errors.length ? ` · ${errors.length} ligne(s) ignorée(s)` : "");
     const newResult = content().querySelector(".csv-result");
     if (newResult) newResult.textContent = msg;
   });

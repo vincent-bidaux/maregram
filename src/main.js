@@ -184,8 +184,53 @@ function wrapEventLabel(text, maxWidth) {
   return [parts.slice(0, bestI).join(sep), parts.slice(bestI).join(sep)];
 }
 
+// Largeur du marqueur ponctuel (évènement sans fin) centré sur midi du jour
+const EVENT_POINT_WIDTH = 20;
+
+const isDateOnly = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s.trim());
+
+// Un évènement sans date de fin est un marqueur ponctuel (midi du jour).
+const isPointEvent = (ev) => !ev.end;
+
+const eventStartMs = (ev) => {
+  if (isDateOnly(ev.start)) {
+    const [y, m, d] = ev.start.split("-").map(Number);
+    return new Date(y, m - 1, d).getTime();
+  }
+  return new Date(ev.start).getTime();
+};
+// Date de fin en jour-seul : borne exclusive au jour suivant (jour entier couvert)
+const eventEndMs = (ev) => {
+  if (isDateOnly(ev.end)) {
+    const [y, m, d] = ev.end.split("-").map(Number);
+    return new Date(y, m - 1, d + 1).getTime();
+  }
+  return new Date(ev.end).getTime();
+};
+const eventNoonMs = (ev) => {
+  let y, m, d;
+  if (isDateOnly(ev.start)) {
+    [y, m, d] = ev.start.split("-").map(Number);
+  } else {
+    const dt = new Date(ev.start);
+    y = dt.getFullYear();
+    m = dt.getMonth() + 1;
+    d = dt.getDate();
+  }
+  return new Date(y, m - 1, d, 12).getTime();
+};
+
 // Icônes 12×12, remplies en blanc translucide par le groupe appelant
 const EVENT_ICONS = {
+  calendar: `
+    <rect x="1.5" y="2.6" width="9" height="7.9" rx="1.2" fill="none" stroke="#fff" stroke-width="1"/>
+    <path d="M1.6 4.8 h8.8" stroke="#fff" stroke-width="1"/>
+    <rect x="3.3" y="1.3" width="1" height="2.2" rx="0.5"/>
+    <rect x="7.7" y="1.3" width="1" height="2.2" rx="0.5"/>
+    <rect x="3.1" y="6.3" width="1.4" height="1.3" rx="0.2"/>
+    <rect x="5.3" y="6.3" width="1.4" height="1.3" rx="0.2"/>
+    <rect x="7.5" y="6.3" width="1.4" height="1.3" rx="0.2"/>
+  `,
   trophy: `
     <path d="M3.2 1 h5.6 v2.4 a2.8 2.8 0 0 1 -5.6 0 Z"/>
     <path d="M3.2 2 C1.4 2 1.4 4.2 3.4 4.6 M8.8 2 c1.8 0 1.8 2.2 -0.2 2.6" stroke="#fff" stroke-width="0.7" fill="none"/>
@@ -240,8 +285,16 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
   const eventsData = [];
   if (showEvents) {
     for (const ev of events) {
-      const ex0 = x(new Date(ev.start).getTime());
-      const ex1 = x(new Date(ev.end).getTime());
+      let ex0, ex1;
+      if (isPointEvent(ev)) {
+        // marqueur ponctuel : 20px centrés sur midi du jour
+        const cx = x(eventNoonMs(ev));
+        ex0 = cx - EVENT_POINT_WIDTH / 2;
+        ex1 = cx + EVENT_POINT_WIDTH / 2;
+      } else {
+        ex0 = x(eventStartMs(ev));
+        ex1 = x(eventEndMs(ev));
+      }
       if (ex1 < 0 || ex0 > w) continue;
       const lines = wrapEventLabel(eventLabelText(ev), 2 * (ex1 - ex0));
       eventsData.push({ ev, ex0, ex1, ecx: (ex0 + ex1) / 2, lines });

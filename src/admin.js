@@ -378,9 +378,67 @@ let events = [];
 let eventsLoaded = false;
 let evSaveTimer = null;
 const EVENT_ICONS_LIST = [
+  ["calendar", "📅 Agenda"],
   ["music", "♪ Musique"],
   ["trophy", "🏆 Trophée"],
 ];
+
+// Type CSV libre → clé d'icône (défaut : calendar)
+function normalizeEventType(t) {
+  t = (t || "").toLowerCase().trim();
+  if (!t) return "calendar";
+  if (/music|musiq|concert|franco/.test(t)) return "music";
+  if (/troph|sport|foot|match|coupe|rugby/.test(t)) return "trophy";
+  return "calendar";
+}
+
+const pad2 = (n) => String(n).padStart(2, "0");
+
+/**
+ * Parse une date CSV : "YYYY-MM-DD[ T HH:MM]" ou "DD/MM/YYYY[ HH:MM]".
+ * Renvoie une chaîne jour-seul "YYYY-MM-DD" (pas d'heure) ou un ISO UTC si une
+ * heure est fournie ; null si invalide.
+ */
+function parseCsvDate(s) {
+  s = (s || "").trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2}))?$/);
+  if (m) {
+    const date = `${m[3]}-${pad2(m[2])}-${pad2(m[1])}`;
+    return m[4] != null ? parisWallToISO(`${date}T${pad2(m[4])}:${m[5]}`) : date;
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?$/);
+  if (m) {
+    const date = `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+    return m[4] != null ? parisWallToISO(`${date}T${pad2(m[4])}:${m[5]}`) : date;
+  }
+  return null;
+}
+
+function parseEventsCsv(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const events = [];
+  const errors = [];
+  lines.forEach((line, i) => {
+    const parts = line.split(";").map((s) => s.trim());
+    if (i === 0 && /^(nom|name|libell)/i.test(parts[0] || "")) return; // en-tête
+    const [nom, deb, fin, type] = parts;
+    if (!nom || !deb) {
+      errors.push(`Ligne ${i + 1} ignorée (nom ou date début manquant)`);
+      return;
+    }
+    const start = parseCsvDate(deb);
+    if (!start) {
+      errors.push(`Ligne ${i + 1} : date début invalide « ${deb} »`);
+      return;
+    }
+    const ev = { label: nom, start, icon: normalizeEventType(type), published: true };
+    const end = fin ? parseCsvDate(fin) : null;
+    if (end) ev.end = end;
+    events.push(ev);
+  });
+  return { events, errors };
+}
 
 const eventLabelText = (ev) => (typeof ev.label === "string" ? ev.label : ev.label?.fr || ev.label?.en || "");
 const findEv = (uid) => events.find((e) => e._uid === uid);
@@ -505,7 +563,20 @@ async function renderEvents() {
       <label>Fin <input type="datetime-local" name="end" required /></label>
       <select name="icon">${EVENT_ICONS_LIST.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
       <button type="submit">+ Ajouter (brouillon)</button>
-    </form>`;
+    </form>
+
+    <div class="csv-import">
+      <h3>Import CSV</h3>
+      <p class="muted">Format : <code>nom;date début;date fin;type</code> — une ligne par évènement.
+        <strong>type</strong> (agenda / musique / trophée) et <strong>date de fin</strong> optionnels.
+        Dates : <code>2026-07-15</code> ou <code>2026-07-15 22:30</code> (heure de Paris).
+        Sans date de fin → marqueur au milieu du jour. Les lignes importées sont <strong>publiées</strong>.</p>
+      <label class="csv-file-label">
+        <input type="file" class="csv-file" accept=".csv,text/csv,text/plain" />
+        Choisir un fichier CSV…
+      </label>
+      <span class="csv-result muted"></span>
+    </div>`;
 
   content().querySelectorAll(".event-admin-row").forEach((row) => {
     const ev = findEv(row.dataset.uid);
@@ -548,6 +619,25 @@ async function renderEvents() {
     if (!label || !start || !end) return;
     events.push({ _uid: `ev_${Date.now().toString(36)}`, start, end, label, icon: f.icon.value, published: false });
     saveEventsAndRerender();
+  });
+
+  const csvInput = content().querySelector(".csv-file");
+  csvInput.addEventListener("change", async () => {
+    const file = csvInput.files[0];
+    if (!file) return;
+    const resultEl = content().querySelector(".csv-result");
+    resultEl.textContent = "Lecture…";
+    const text = await file.text();
+    const { events: parsed, errors } = parseEventsCsv(text);
+    if (!parsed.length) {
+      resultEl.textContent = `Aucun évènement importable. ${errors.slice(0, 3).join(" · ")}`;
+      return;
+    }
+    for (const ev of parsed) events.push({ ...ev, _uid: `ev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}` });
+    saveEventsAndRerender();
+    const msg = `${parsed.length} évènement(s) importé(s) et publié(s)` + (errors.length ? ` · ${errors.length} ligne(s) ignorée(s)` : "");
+    const newResult = content().querySelector(".csv-result");
+    if (newResult) newResult.textContent = msg;
   });
 }
 

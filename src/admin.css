@@ -406,3 +406,40 @@
   padding: 0.5rem 0.9rem;
   cursor: pointer;
 }
+
+.csv-import {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.csv-import h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.csv-import code {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+.csv-file-label {
+  display: inline-block;
+  margin: 0.5rem 0.75rem 0.25rem 0;
+  padding: 0.5rem 0.9rem;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.csv-file-label input {
+  display: none;
+}
+
+.csv-result {
+  font-size: 0.82rem;
+}

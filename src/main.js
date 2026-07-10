@@ -528,6 +528,14 @@ function tideListRow(tides, now) {
   return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
 
+/** Interrupteur style iOS (piste + curseur), toujours à droite de son label. */
+const iosToggle = (className, checked) => `
+  <span class="ios-switch">
+    <input type="checkbox" class="${className}" ${checked ? "checked" : ""} />
+    <span class="ios-switch-track"><span class="ios-switch-thumb"></span></span>
+  </span>
+`;
+
 const GEAR_ICON = `
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="3"/>
@@ -651,8 +659,8 @@ function settingsPanelHtml(beaches) {
 
           <h3>${tr("Affichage", "Display")}</h3>
           <label class="settings-toggle">
-            <input type="checkbox" class="events-toggle" ${getPrefs().showEvents ? "checked" : ""} />
             <span>${tr("Afficher les événements locaux sur la timeline", "Show local events on the timeline")}</span>
+            ${iosToggle("events-toggle", getPrefs().showEvents)}
           </label>
 
           <h3>${tr("Calendrier des marées", "Tide calendar")}</h3>

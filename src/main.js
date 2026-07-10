@@ -31,6 +31,7 @@ import {
   getShareUrl,
 } from "./settings.js";
 import { LANG, setLang, tr, dateLocale, trWaterQuality } from "./i18n.js";
+import { APP_VERSION } from "./changelog-data.js";
 
 const app = document.getElementById("app");
 
@@ -1130,6 +1131,9 @@ async function render() {
       <div class="beach-grid">${beachesHtml}</div>
 
       <footer class="credits">
+        <p class="footnote version-line">
+          v${APP_VERSION} · <a href="/nouveautes/">${tr("Nouveautés", "What's new")}</a>
+        </p>
         <p class="footnote">* ${tr(
           "Coefficient estimé à partir du marnage du jour, calibré sur les niveaux caractéristiques du port de La Rochelle-Pallice (valeur indicative, non officielle).",
           "Coefficient estimated from the day's tidal range, calibrated on La Rochelle-Pallice's published characteristic levels (indicative, not official)."
@@ -1143,7 +1147,7 @@ async function render() {
           ${tr("Construit avec", "Built with")} <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · ${tr("Hébergé par", "Hosted on")} <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
         </p>
         <p class="footnote credits-brand">
-          ${tr("Édité par", "Published by")} larochelle-today · v09 ·
+          ${tr("Édité par", "Published by")} larochelle-today ·
           <a href="${tr("https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr", "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en")}" target="_blank" rel="license noopener"><img src="/cc-by-nc-sa.png" alt="${tr("Licence CC BY-NC-SA 4.0", "CC BY-NC-SA 4.0 licence")}" class="cc-badge" width="80" height="15" /></a>
         </p>
       </footer>

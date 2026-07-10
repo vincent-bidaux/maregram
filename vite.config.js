@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         admin: "admin/index.html",
+        nouveautes: "nouveautes/index.html",
       },
     },
   },

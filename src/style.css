@@ -309,7 +309,7 @@ h1 {
 }
 
 .curve .event-label {
-  fill: rgba(255, 255, 255, 0.5);
+  fill: rgba(250, 204, 21, 0.75);
   font-size: 9.5px;
   text-anchor: middle;
   letter-spacing: 0.02em;

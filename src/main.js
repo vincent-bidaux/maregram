@@ -161,6 +161,18 @@ const eventLabelText = (ev) =>
   typeof ev.label === "string" ? ev.label : ev.label[LANG] || ev.label.fr;
 
 /**
+ * Teinte discrète (tons désaturés, pas d'alerte criarde) pour les coefficients
+ * remarquables : >100 grandes marées, >90 fortes marées, <50 marées faibles.
+ * null = pas de coefficient notable, couleur de texte par défaut.
+ */
+function coeffColor(coeff) {
+  if (coeff > 100) return "#b5654a";
+  if (coeff > 90) return "#b8a052";
+  if (coeff < 50) return "#6b9a7c";
+  return null;
+}
+
+/**
  * Découpe un libellé d'évènement sur 2 lignes s'il dépasse maxWidth, en
  * coupant de préférence sur " · " (garde les noms d'artistes entiers), sinon
  * sur les espaces, au point le plus proche du milieu. Sinon, une seule ligne.
@@ -352,19 +364,26 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
     });
     const highs = dayTides.filter((e) => e.type === "high").map((e) => e.height);
     const lows = dayTides.filter((e) => e.type === "low").map((e) => e.height);
-    const coeffText =
+    const dayCoeff =
       highs.length && lows.length
-        ? ` · ${approxCoefficient(
+        ? approxCoefficient(
             highs.reduce((a, b) => a + b, 0) / highs.length - lows.reduce((a, b) => a + b, 0) / lows.length
-          )}`
-        : "";
+          )
+        : null;
+    const coeffText = dayCoeff != null ? ` · ${dayCoeff}` : "";
     const dayLabelText = fmtDayLabel(d0, now) + coeffText;
     const dayLabelWidth = measureTextWidth(
       dayLabelText.toUpperCase(),
       "600 11px system-ui, -apple-system, 'Segoe UI', sans-serif"
     );
     const moonX = bx0 + 6 + dayLabelWidth + 12;
-    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${dayLabelText}</text>`;
+    const dayNamePart = fmtDayLabel(d0, now);
+    const coeffColorVal = dayCoeff != null ? coeffColor(dayCoeff) : null;
+    const coeffSpan =
+      dayCoeff != null
+        ? ` · <tspan${coeffColorVal ? ` fill="${coeffColorVal}"` : ""}>${dayCoeff}</tspan>`
+        : "";
+    daySections += `<text x="${(bx0 + 6).toFixed(1)}" y="14" class="day-label">${esc(dayNamePart)}${coeffSpan}</text>`;
     // Lune ~9px de haut, centrée sur la hauteur des capitales du libellé
     daySections += `<g transform="translate(${moonX.toFixed(1)}, 5.5) scale(0.75)">${moonInnerSvg(moonPhaseIndex(d0))}</g>`;
   }
@@ -383,9 +402,8 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
       })
       .join("");
     eventsSvg += `
-      <rect x="${ex0.toFixed(1)}" y="0" width="${(ex1 - ex0).toFixed(1)}" height="${h}" fill="rgba(250,204,21,0.12)" />
+      <rect x="${ex0.toFixed(1)}" y="-10" width="${(ex1 - ex0).toFixed(1)}" height="${h + 20}" rx="4" ry="4" fill="rgba(250,204,21,0.12)" />
       <g transform="translate(${(ecx - 6).toFixed(1)}, ${h - 16})" fill="#fff" opacity="0.5">${EVENT_ICONS[ev.icon] || ""}</g>
-      <path d="M ${(ecx - 4).toFixed(1)} ${h + 11} L ${(ecx + 4).toFixed(1)} ${h + 11} L ${ecx.toFixed(1)} ${h + 5} Z" fill="rgba(250,204,21,0.55)" />
       ${linesSvg}
     `;
   }
@@ -397,7 +415,7 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
     const ex = x(t.getTime());
     const ey = y(e.height);
     const time = fmtTime(e.time);
-    const height = e.height.toFixed(2);
+    const height = `${e.height.toFixed(2)} m`;
     if (e.type === "high") {
       tideLabels += `
         <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3.5" fill="var(--accent)" />
@@ -425,7 +443,7 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
     .join("");
 
   const html = `
-    <svg width="${w}" height="${totalH}" viewBox="0 0 ${w} ${totalH}" class="curve">
+    <svg width="${w}" height="${totalH + 10}" viewBox="0 -10 ${w} ${totalH + 10}" class="curve">
       ${daySections}
       ${eventsSvg}
       ${thresholdLines}
@@ -495,12 +513,13 @@ function tideListRow(tides, now) {
   let amplitudeHtml = "";
   if (avgAmplitude != null) {
     const coeff = approxCoefficient(avgAmplitude);
+    const coeffColorVal = coeffColor(coeff);
     amplitudeHtml = `
       <p class="meta amplitude" title="${tr(
         "Estimation à partir du marnage du jour, calibrée sur les niveaux caractéristiques du port (marnage ≈ 5,65 m pour un coefficient 100)",
         "Estimated from today's tidal range, calibrated on the port's published characteristic levels (≈ 5.65 m range at coefficient 100)"
       )}">
-        ${tr("Coefficient", "Coefficient")} ≈ ${coeff}* · ${tr("Amplitude moyenne aujourd'hui", "Mean range today")} ≈ ${avgAmplitude.toFixed(2)} m
+        ${tr("Coefficient", "Coefficient")} ≈ <span${coeffColorVal ? ` style="color:${coeffColorVal}"` : ""}>${coeff}*</span> · ${tr("Amplitude moyenne aujourd'hui", "Mean range today")} ≈ ${avgAmplitude.toFixed(2)} m
       </p>
     `;
   }

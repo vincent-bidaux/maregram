@@ -713,6 +713,12 @@ body.modal-open {
   margin: 1rem 0 0.25rem;
 }
 
+.settings-sep {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.25rem 0;
+}
+
 .calendar-actions {
   display: flex;
   flex-wrap: wrap;

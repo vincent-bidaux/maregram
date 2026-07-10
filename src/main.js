@@ -617,80 +617,93 @@ function settingsPanelHtml(beaches) {
           <button class="settings-close" type="button" aria-label="${tr("Fermer", "Close")}">✕</button>
         </div>
         <div class="settings-body">
-          <h3>${tr("Mon dashboard", "My dashboard")}</h3>
-          <input type="text" class="name-input" maxlength="40" value="${esc(getName())}"
-                 placeholder="${tr("Ton prénom (ex : Vincent)", "Your name (e.g. Vincent)")}" />
-          <div class="share-box">
-            ${
-              getShareUrl()
-                ? `<p class="meta">${tr(
-                    "Ton lien perso — ouvre-le sur un autre appareil pour retrouver tes réglages :",
-                    "Your personal link — open it on another device to get your settings back:"
-                  )}</p>
-                   <div class="share-row">
-                     <code class="share-url">${esc(getShareUrl())}</code>
-                     <button type="button" class="share-copy">${tr("Copier", "Copy")}</button>
-                   </div>`
-                : `<p class="meta">${tr(
-                    "Ton lien de partage apparaîtra ici dès ta première personnalisation (nom, favori, seuil…).",
-                    "Your shareable link will appear here as soon as you personalise something (name, favourite, threshold…)."
-                  )}</p>`
-            }
-          </div>
+          ${[
+            // Lieux de baignade + Ajouter un lieu (un seul groupe, pas de séparateur entre les deux)
+            `
+              <h3>${tr("Lieux de baignade", "Swimming spots")}</h3>
+              <p class="meta">
+                ${tr(
+                  `L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glissez la poignée pour réordonner — l'ordre s'applique à toute l'app. Vos réglages sont enregistrés en ligne et liés à votre lien.`,
+                  `The star adds the spot to the graph (max ${MAX_FAVORITES}). Drag the handle to reorder — the order applies across the app. Your settings are saved online and tied to your link.`
+                )}
+              </p>
+              <div class="settings-beach-list">${rows}</div>
 
-          <h3>${tr("Lieux de baignade", "Swimming spots")}</h3>
-          <p class="meta">
-            ${tr(
-              `L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner — l'ordre s'applique à toute l'app. Tes réglages sont enregistrés en ligne et liés à ton lien.`,
-              `The star adds the spot to the graph (max ${MAX_FAVORITES}). Drag the handle to reorder — the order applies across the app. Your settings are saved online and tied to your link.`
-            )}
-          </p>
-          <div class="settings-beach-list">${rows}</div>
-
-          <h3>${tr("Ajouter un lieu", "Add a spot")}</h3>
-          <form class="add-beach-form">
-            <input type="text" name="name" placeholder="${tr("Nom du lieu", "Spot name")}" required />
-            <span class="settings-row-input">
-              <input type="number" name="threshold" step="0.05" min="0" max="10" placeholder="3.00" required />
-              <span>m</span>
-            </span>
-            <button type="submit">${tr("Ajouter", "Add")}</button>
-          </form>
-
-          <h3>${tr("Affichage", "Display")}</h3>
-          <label class="settings-toggle">
-            <span>${tr("Afficher les événements locaux sur la timeline", "Show local events on the timeline")}</span>
-            ${iosToggle("events-toggle", getPrefs().showEvents)}
-          </label>
-
-          <h3>${tr("Calendrier des marées", "Tide calendar")}</h3>
-          <p class="meta">
-            ${tr(
-              "Abonne ton agenda (iPhone, Google, Outlook…) aux horaires de marées : un évènement par jour avec pleines/basses mers, hauteurs, coefficient et évènements locaux.",
-              "Subscribe your calendar (iPhone, Google, Outlook…) to the tide times: one all-day event per day with high/low tides, heights, coefficient and local events."
-            )}
-          </p>
-          <div class="calendar-actions">
-            <a class="calendar-subscribe" href="#">${tr("S'abonner au calendrier", "Subscribe to calendar")}</a>
-            <button type="button" class="calendar-copy">${tr("Copier le lien", "Copy link")}</button>
-          </div>
-
-          ${
+              <h3>${tr("Ajouter un lieu", "Add a spot")}</h3>
+              <form class="add-beach-form">
+                <input type="text" name="name" placeholder="${tr("Nom du lieu", "Spot name")}" required />
+                <span class="settings-row-input">
+                  <input type="number" name="threshold" step="0.05" min="0" max="10" placeholder="3.00" required />
+                  <span>m</span>
+                </span>
+                <button type="submit">${tr("Ajouter", "Add")}</button>
+              </form>
+            `,
+            // Afficher les évènements : pas de titre, juste le label + l'interrupteur
+            `
+              <label class="settings-toggle">
+                <span>${tr("Afficher les événements locaux sur le maréegraphe", "Show local events on the tide graph")}</span>
+                ${iosToggle("events-toggle", getPrefs().showEvents)}
+              </label>
+            `,
+            // Langue
+            `
+              <h3>${tr("Langue", "Language")}</h3>
+              <div class="lang-toggle">
+                <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
+                <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
+              </div>
+            `,
+            // Dashboard personnel
+            `
+              <h3>${tr("Dashboard personnel", "Personal dashboard")}</h3>
+              <input type="text" class="name-input" maxlength="40" value="${esc(getName())}"
+                     placeholder="${tr("Votre prénom (ex : Vincent)", "Your name (e.g. Vincent)")}" />
+              <div class="share-box">
+                ${
+                  getShareUrl()
+                    ? `<p class="meta">${tr(
+                        "Votre lien personnel — ouvrez-le sur un autre appareil pour retrouver vos réglages :",
+                        "Your personal link — open it on another device to get your settings back:"
+                      )}</p>
+                       <div class="share-row">
+                         <code class="share-url">${esc(getShareUrl())}</code>
+                         <button type="button" class="share-copy">${tr("Copier", "Copy")}</button>
+                       </div>`
+                    : `<p class="meta">${tr(
+                        "Votre lien de partage apparaîtra ici dès votre première personnalisation (nom, favori, seuil…).",
+                        "Your shareable link will appear here as soon as you personalise something (name, favourite, threshold…)."
+                      )}</p>`
+                }
+              </div>
+            `,
+            // Calendrier des marées
+            `
+              <h3>${tr("Calendrier des marées", "Tide calendar")}</h3>
+              <p class="meta">
+                ${tr(
+                  "Abonnez votre agenda (iPhone, Google, Outlook…) aux horaires de marées : un évènement par jour avec pleines/basses mers, hauteurs, coefficient et évènements locaux.",
+                  "Subscribe your calendar (iPhone, Google, Outlook…) to the tide times: one all-day event per day with high/low tides, heights, coefficient and local events."
+                )}
+              </p>
+              <div class="calendar-actions">
+                <a class="calendar-subscribe" href="#">${tr("S'abonner au calendrier", "Subscribe to calendar")}</a>
+                <button type="button" class="calendar-copy">${tr("Copier le lien", "Copy link")}</button>
+              </div>
+            `,
+            // Écran d'accueil (absent si déjà installée en PWA standalone)
             isStandalone()
-              ? ""
+              ? null
               : `
-          <h3>${tr("Écran d'accueil", "Home screen")}</h3>
-          <button type="button" class="install-btn">${tr("Ajouter à l'écran d'accueil", "Add to home screen")}</button>
-          <p class="meta install-hint" hidden></p>`
-          }
-
-          <button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>
-
-          <h3>${tr("Langue", "Language")}</h3>
-          <div class="lang-toggle">
-            <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
-            <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
-          </div>
+              <h3>${tr("Écran d'accueil", "Home screen")}</h3>
+              <button type="button" class="install-btn">${tr("Ajouter à l'écran d'accueil", "Add to home screen")}</button>
+              <p class="meta install-hint" hidden></p>
+            `,
+            // Réinitialiser
+            `<button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>`,
+          ]
+            .filter(Boolean)
+            .join('<hr class="settings-sep" />')}
         </div>
       </div>
     </div>
@@ -767,13 +780,13 @@ function setupSettingsPanel() {
         deferredInstallPrompt = null;
       } else if (isIOS()) {
         hint.textContent = tr(
-          "Appuie sur l'icône Partager en bas de Safari, puis « Sur l'écran d'accueil ».",
+          "Appuyez sur l'icône Partager en bas de Safari, puis « Sur l'écran d'accueil ».",
           "Tap the Share icon at the bottom of Safari, then “Add to Home Screen”."
         );
         hint.hidden = false;
       } else {
         hint.textContent = tr(
-          "Ouvre le menu de ton navigateur puis « Installer l'application » / « Ajouter à l'écran d'accueil ».",
+          "Ouvrez le menu de votre navigateur puis « Installer l'application » / « Ajouter à l'écran d'accueil ».",
           "Open your browser menu, then “Install app” / “Add to Home Screen”."
         );
         hint.hidden = false;

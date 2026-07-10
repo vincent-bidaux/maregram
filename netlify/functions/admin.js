@@ -9,6 +9,7 @@
  *   GET  /api/admin/stats                        → stats détaillées (admin only)
  */
 import { getStore } from "@netlify/blobs";
+import { getBeaches, saveBeaches, getEvents, saveEvents } from "../shared/content.js";
 
 export const config = { path: "/api/admin/:action" };
 
@@ -127,6 +128,33 @@ export default async (req) => {
   if (action === "stats") {
     if (!(await isAdmin(req))) return json({ error: "unauthorized" }, 401);
     return json(await collectStats());
+  }
+
+  // Gestion de contenu (lieux, évènements) — admin uniquement
+  const origin = new URL(req.url).origin;
+
+  if (action === "beaches") {
+    if (!(await isAdmin(req))) return json({ error: "unauthorized" }, 401);
+    if (req.method === "GET") return json(await getBeaches(origin));
+    if (req.method === "PUT") {
+      const body = await req.json().catch(() => null);
+      if (!body || !Array.isArray(body.beaches)) return json({ error: "bad_request" }, 400);
+      await saveBeaches(body);
+      return json({ ok: true });
+    }
+    return json({ error: "method_not_allowed" }, 405);
+  }
+
+  if (action === "events") {
+    if (!(await isAdmin(req))) return json({ error: "unauthorized" }, 401);
+    if (req.method === "GET") return json(await getEvents(origin));
+    if (req.method === "PUT") {
+      const body = await req.json().catch(() => null);
+      if (!body || !Array.isArray(body.events)) return json({ error: "bad_request" }, 400);
+      await saveEvents(body);
+      return json({ ok: true });
+    }
+    return json({ error: "method_not_allowed" }, 405);
   }
 
   return json({ error: "not_found" }, 404);

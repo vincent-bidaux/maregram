@@ -13,8 +13,15 @@ export async function loadStationData(station) {
 }
 
 export async function loadBeaches() {
-  const res = await fetch("/config/beaches.json");
-  return res.json();
+  // Lieux publiés gérés par l'admin (repli sur le fichier statique d'amorçage
+  // si l'API est indisponible, ex. hors ligne au tout premier chargement).
+  try {
+    const res = await fetch("/api/beaches");
+    if (res.ok) return res.json();
+  } catch {
+    // continue vers le repli
+  }
+  return fetch("/config/beaches.json").then((r) => r.json());
 }
 
 /** Point de la courbe le plus proche (ou juste avant) l'instant donné. */

@@ -78,6 +78,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+  // Données dynamiques / authentifiées : jamais servies depuis le cache
+  if (url.pathname.startsWith("/api/admin") || url.pathname.startsWith("/api/settings")) return;
 
   if (req.mode === "navigate") {
     event.respondWith(handleNavigation(event));

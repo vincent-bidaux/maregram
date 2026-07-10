@@ -42,6 +42,17 @@ const fmtDuration = (ms) => {
 };
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Installation PWA : Chrome/Android exposent beforeinstallprompt (déclenchement
+// natif) ; iOS Safari n'a pas d'API → on affiche les instructions manuelles.
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+const isStandalone = () =>
+  window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const fmtDayLabel = (d, today) => {
   const isToday = d.toDateString() === today.toDateString();
   const isTomorrow = d.toDateString() === new Date(today.getTime() + 86400000).toDateString();
@@ -510,6 +521,15 @@ function settingsPanelHtml(beaches) {
             <button type="button" class="calendar-copy">${tr("Copier le lien", "Copy link")}</button>
           </div>
 
+          ${
+            isStandalone()
+              ? ""
+              : `
+          <h3>${tr("Écran d'accueil", "Home screen")}</h3>
+          <button type="button" class="install-btn">${tr("Ajouter à l'écran d'accueil", "Add to home screen")}</button>
+          <p class="meta install-hint" hidden></p>`
+          }
+
           <button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>
 
           <h3>${tr("Langue", "Language")}</h3>
@@ -552,6 +572,30 @@ function setupSettingsPanel() {
 
   // Calendrier : webcal:// ouvre le dialogue d'abonnement (iOS/macOS/Outlook) ;
   // le bouton copie l'URL https pour Google Agenda et autres
+  const installBtn = overlay.querySelector(".install-btn");
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      const hint = overlay.querySelector(".install-hint");
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+      } else if (isIOS()) {
+        hint.textContent = tr(
+          "Appuie sur l'icône Partager en bas de Safari, puis « Sur l'écran d'accueil ».",
+          "Tap the Share icon at the bottom of Safari, then “Add to Home Screen”."
+        );
+        hint.hidden = false;
+      } else {
+        hint.textContent = tr(
+          "Ouvre le menu de ton navigateur puis « Installer l'application » / « Ajouter à l'écran d'accueil ».",
+          "Open your browser menu, then “Install app” / “Add to Home Screen”."
+        );
+        hint.hidden = false;
+      }
+    });
+  }
+
   const subscribeLink = overlay.querySelector(".calendar-subscribe");
   const copyBtn = overlay.querySelector(".calendar-copy");
   if (subscribeLink) subscribeLink.href = `webcal://${location.host}/calendar.ics`;

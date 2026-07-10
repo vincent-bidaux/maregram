@@ -30,6 +30,8 @@ import {
   getName,
   setName,
   getShareUrl,
+  isPreview,
+  getPreviewToken,
 } from "./settings.js";
 import { LANG, setLang, tr, dateLocale, trWaterQuality } from "./i18n.js";
 import { APP_VERSION } from "./changelog-data.js";
@@ -1124,7 +1126,15 @@ async function render() {
          </div>`
       : "";
 
+    const previewBanner = isPreview()
+      ? `<div class="preview-banner">
+           <span>👁️ ${tr("APERÇU ADMIN", "ADMIN PREVIEW")} — ${tr("vous visualisez le dashboard de", "you're viewing the dashboard of")} <strong>${esc(getName().trim() || getPreviewToken())}</strong> ${tr("(lecture seule)", "(read-only)")}</span>
+           <a href="/">${tr("Quitter l'aperçu", "Exit preview")}</a>
+         </div>`
+      : "";
+
     app.innerHTML = `
+      ${previewBanner}
       <div id="theme-scope">
       ${adminCard}
       ${staleBanner}

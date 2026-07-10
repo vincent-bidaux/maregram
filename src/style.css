@@ -70,6 +70,32 @@ h1 {
   font-size: 0.8rem;
 }
 
+/* Bannière d'aperçu admin : toujours visible, jamais filtrée par le thème de
+   la personne prévisualisée (posée hors de #theme-scope), motif rayé pour
+   qu'on ne puisse pas la confondre avec une vraie carte du dashboard. */
+.preview-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  background: repeating-linear-gradient(135deg, #4c1d95, #4c1d95 10px, #5b21b6 10px, #5b21b6 20px);
+  border: 1px solid #a78bfa;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin: 0 auto 1rem;
+  max-width: 720px;
+  font-size: 0.85rem;
+}
+
+.preview-banner a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 .admin-card {
   display: flex;
   align-items: center;

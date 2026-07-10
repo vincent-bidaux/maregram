@@ -269,6 +269,7 @@
 }
 
 .mini {
+  display: inline-block;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
@@ -278,6 +279,7 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .mini.danger {

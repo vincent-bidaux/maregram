@@ -27,6 +27,7 @@ let state = emptyState();
 let token = null;
 let saveTimer = null;
 let onTokenCreated = null;
+let previewToken = null;
 
 function normalize(rec) {
   const s = rec?.settings || {};
@@ -82,7 +83,32 @@ export function onSession(cb) {
   onTokenCreated = cb;
 }
 
+/** true si on visualise le dossier de quelqu'un d'autre via un lien d'aperçu admin. */
+export function isPreview() {
+  return previewToken !== null;
+}
+export function getPreviewToken() {
+  return previewToken;
+}
+
 export async function initSession() {
+  // Aperçu admin (?preview=TOKEN) : on affiche le dossier ciblé sans jamais
+  // l'écrire dans le localStorage de cet appareil ni dans son URL courte, pour
+  // ne pas remplacer la propre session de l'admin qui consulte l'aperçu.
+  const previewParam = new URLSearchParams(location.search).get("preview");
+  if (previewParam) {
+    try {
+      const res = await fetch(`/api/settings?token=${encodeURIComponent(previewParam)}`);
+      if (res.ok) {
+        previewToken = previewParam;
+        state = normalize(await res.json());
+        return;
+      }
+    } catch {
+      // tombe dans le comportement normal ci-dessous si l'aperçu échoue
+    }
+  }
+
   token = readTokenFromUrl() || localStorage.getItem(TOKEN_KEY);
   if (token) {
     try {
@@ -115,6 +141,9 @@ function settingsPayload() {
 }
 
 function scheduleSave() {
+  // Mode aperçu : lecture seule, on ne touche jamais aux données de la
+  // personne prévisualisée ni au localStorage de cet appareil.
+  if (previewToken) return;
   localStorage.setItem(LEGACY_KEY, JSON.stringify(settingsPayload()));
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 700);

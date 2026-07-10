@@ -127,6 +127,7 @@ async function renderStats() {
         <td>${u.name ? esc(u.name) : '<span class="muted">—</span>'}</td>
         <td>${fmtDateTime(u.createdAt)}</td>
         <td title="${fmtDateTime(u.lastSeen)}">${esc(rel(u.lastSeen))}</td>
+        <td><a class="mini preview-link" href="/?preview=${encodeURIComponent(u.token)}" target="_blank" rel="noopener" title="Voir le dashboard tel que cette personne le voit (lecture seule)">👁️ Aperçu</a></td>
         <td><button class="mini danger del-token" data-token="${esc(u.token)}" title="Supprimer ce dossier">✕</button></td>
       </tr>`
     )
@@ -149,8 +150,8 @@ async function renderStats() {
     <h2>Tokens & utilisateurs</h2>
     <div class="table-scroll">
       <table class="admin-table">
-        <thead><tr><th>Token</th><th>Nom</th><th>Créé le</th><th>Dernière visite</th><th></th></tr></thead>
-        <tbody>${usersRows || '<tr><td class="muted" colspan="5">Aucun utilisateur</td></tr>'}</tbody>
+        <thead><tr><th>Token</th><th>Nom</th><th>Créé le</th><th>Dernière visite</th><th></th><th></th></tr></thead>
+        <tbody>${usersRows || '<tr><td class="muted" colspan="6">Aucun utilisateur</td></tr>'}</tbody>
       </table>
     </div>
     <div class="two-col">

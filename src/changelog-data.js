@@ -4,9 +4,17 @@
  * les corrections de bugs ni les outils internes/admin. Mis à jour à chaque
  * nouvelle fonctionnalité publiée (voir footer : lien "Nouveautés").
  */
-export const APP_VERSION = "10.1";
+export const APP_VERSION = "10.2";
 
 export const CHANGELOG = [
+  {
+    date: "2026-07-10",
+    title: { fr: "Thème clair et modes noir & blanc", en: "Light theme and black & white modes" },
+    body: {
+      fr: "Un thème clair (fond crème, texte foncé) s'ajoute au thème sombre, avec deux modes noir & blanc (positif et négatif) pensés pour un futur écran connecté. À choisir dans les réglages.",
+      en: "A light theme (cream background, dark text) joins the dark theme, plus two black & white modes (positive and negative) designed for a future connected display. Pick one in settings.",
+    },
+  },
   {
     date: "2026-07-10",
     title: { fr: "Marégram a un nom", en: "Marégram has a name" },

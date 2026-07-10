@@ -24,6 +24,11 @@ import {
   removeCustomBeach,
   resetAll,
   buildBeachList,
+  initSession,
+  onSession,
+  getName,
+  setName,
+  getShareUrl,
 } from "./settings.js";
 import { LANG, setLang, tr, dateLocale, trWaterQuality } from "./i18n.js";
 
@@ -484,11 +489,32 @@ function settingsPanelHtml(beaches) {
           <button class="settings-close" type="button" aria-label="${tr("Fermer", "Close")}">✕</button>
         </div>
         <div class="settings-body">
+          <h3>${tr("Mon dashboard", "My dashboard")}</h3>
+          <input type="text" class="name-input" maxlength="40" value="${esc(getName())}"
+                 placeholder="${tr("Ton prénom (ex : Vincent)", "Your name (e.g. Vincent)")}" />
+          <div class="share-box">
+            ${
+              getShareUrl()
+                ? `<p class="meta">${tr(
+                    "Ton lien perso — ouvre-le sur un autre appareil pour retrouver tes réglages :",
+                    "Your personal link — open it on another device to get your settings back:"
+                  )}</p>
+                   <div class="share-row">
+                     <code class="share-url">${esc(getShareUrl())}</code>
+                     <button type="button" class="share-copy">${tr("Copier", "Copy")}</button>
+                   </div>`
+                : `<p class="meta">${tr(
+                    "Ton lien de partage apparaîtra ici dès ta première personnalisation (nom, favori, seuil…).",
+                    "Your shareable link will appear here as soon as you personalise something (name, favourite, threshold…)."
+                  )}</p>`
+            }
+          </div>
+
           <h3>${tr("Lieux de baignade", "Swimming spots")}</h3>
           <p class="meta">
             ${tr(
-              `L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner — l'ordre s'applique à toute l'app. Réglages enregistrés sur cet appareil seulement.`,
-              `The star adds the spot to the graph (max ${MAX_FAVORITES}). Drag the handle to reorder — the order applies across the app. Settings are stored on this device only.`
+              `L'étoile ajoute le lieu au graph (max ${MAX_FAVORITES}). Glisse la poignée pour réordonner — l'ordre s'applique à toute l'app. Tes réglages sont enregistrés en ligne et liés à ton lien.`,
+              `The star adds the spot to the graph (max ${MAX_FAVORITES}). Drag the handle to reorder — the order applies across the app. Your settings are saved online and tied to your link.`
             )}
           </p>
           <div class="settings-beach-list">${rows}</div>
@@ -572,6 +598,37 @@ function setupSettingsPanel() {
 
   // Calendrier : webcal:// ouvre le dialogue d'abonnement (iOS/macOS/Outlook) ;
   // le bouton copie l'URL https pour Google Agenda et autres
+  const nameInput = overlay.querySelector(".name-input");
+  if (nameInput) {
+    // MàJ à la volée de l'en-tête, sans re-render (pour ne pas perdre le focus)
+    nameInput.addEventListener("input", () => {
+      setName(nameInput.value);
+      const eyebrow = app.querySelector(".eyebrow");
+      const n = nameInput.value.trim();
+      if (eyebrow) {
+        eyebrow.textContent = n
+          ? `${STATION_DISPLAY_NAMES["la-rochelle-pallice"]} · ${tr("DASHBOARD DE", "DASHBOARD OF")} ${n.toUpperCase()}`
+          : STATION_DISPLAY_NAMES["la-rochelle-pallice"];
+      }
+    });
+  }
+
+  const shareCopy = overlay.querySelector(".share-copy");
+  if (shareCopy) {
+    shareCopy.addEventListener("click", async () => {
+      const url = getShareUrl();
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        const prev = shareCopy.textContent;
+        shareCopy.textContent = tr("Copié ✓", "Copied ✓");
+        setTimeout(() => (shareCopy.textContent = prev), 1800);
+      } catch {
+        prompt(tr("Copie ce lien :", "Copy this link:"), url);
+      }
+    });
+  }
+
   const installBtn = overlay.querySelector(".install-btn");
   if (installBtn) {
     installBtn.addEventListener("click", async () => {
@@ -880,7 +937,11 @@ async function render() {
       <div class="hero-card">
         <div class="hero-head">
           <div>
-            <p class="eyebrow">${stationDisplay}</p>
+            <p class="eyebrow">${
+              getName().trim()
+                ? `${stationDisplay} · ${tr("DASHBOARD DE", "DASHBOARD OF")} ${esc(getName().trim().toUpperCase())}`
+                : stationDisplay
+            }</p>
             <h1 class="app-title">${tr("Marées &amp; Seuils de baignade", "Tides &amp; Swim thresholds")}</h1>
           </div>
           <button class="settings-btn" type="button" aria-label="${tr("Réglages", "Settings")}">${GEAR_ICON}</button>
@@ -1002,7 +1063,13 @@ function scheduleRefresh() {
   }, REFRESH_INTERVAL_MS);
 }
 
-render();
+// Rendu initial après chargement des réglages serveur ; re-render une fois si
+// un token vient d'être créé (le lien de partage + l'en-tête apparaissent).
+onSession(() => {
+  if (!document.hidden) render();
+});
+initSession().then(render);
+
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !settingsOpen) render();
 });

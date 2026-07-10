@@ -1,11 +1,15 @@
 /**
- * Réglages utilisateur persistés en local (localStorage), appliqués par-dessus
- * la config statique public/config/beaches.json : seuils, couleurs, favoris
- * (affichés sur le graph, max MAX_FAVORITES), ordre d'affichage global, et
- * lieux de baignade ajoutés localement. Pas de backend — tout reste sur
- * l'appareil de l'utilisateur.
+ * Réglages utilisateur adossés au serveur (Netlify Blobs via /api/settings),
+ * sans compte : un token court identifie le dossier de réglages et voyage dans
+ * l'URL (?token) pour le retrouver depuis n'importe quel appareil.
+ *
+ * État maintenu en mémoire, lu de façon synchrone par le rendu ; chaque
+ * mutation planifie une sauvegarde serveur débouncée et met à jour un cache
+ * localStorage (résilience hors-ligne et avant qu'un token n'existe). Le token
+ * est créé paresseusement à la première personnalisation.
  */
-const STORAGE_KEY = "maree-la-rochelle:settings";
+const LEGACY_KEY = "maree-la-rochelle:settings";
+const TOKEN_KEY = "maree-la-rochelle:token";
 export const MAX_FAVORITES = 4;
 
 export const COLOR_PALETTE = [
@@ -17,119 +21,212 @@ export const COLOR_PALETTE = [
   "#f472b6", "#db2777", // rose
 ];
 
-function loadRaw() {
+const emptyState = () => ({ name: "", overrides: {}, order: [], customBeaches: [], prefs: {} });
+
+let state = emptyState();
+let token = null;
+let saveTimer = null;
+let onTokenCreated = null;
+
+function normalize(rec) {
+  const s = rec?.settings || {};
+  return {
+    name: rec?.name || "",
+    overrides: s.overrides && typeof s.overrides === "object" ? s.overrides : {},
+    order: Array.isArray(s.order) ? s.order : [],
+    customBeaches: Array.isArray(s.customBeaches) ? s.customBeaches : [],
+    prefs: s.prefs && typeof s.prefs === "object" ? s.prefs : {},
+  };
+}
+
+function loadLegacyLocal() {
   try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const d = JSON.parse(localStorage.getItem(LEGACY_KEY));
     return {
-      overrides: data?.overrides || {},
-      order: data?.order || [],
-      customBeaches: data?.customBeaches || [],
-      prefs: data?.prefs || {},
+      name: "",
+      overrides: d?.overrides || {},
+      order: d?.order || [],
+      customBeaches: d?.customBeaches || [],
+      prefs: d?.prefs || {},
     };
   } catch {
-    return { overrides: {}, order: [], customBeaches: [], prefs: {} };
+    return emptyState();
   }
 }
 
-/** Préférences d'affichage globales (défauts appliqués ici). */
-export function getPrefs() {
-  const { prefs } = loadRaw();
-  return { showEvents: prefs.showEvents ?? true };
+function readTokenFromUrl() {
+  const raw = location.search.slice(1);
+  if (!raw) return null;
+  // forme jolie ?kR5tv6 (sans =) ou forme explicite ?token=kR5tv6
+  if (!raw.includes("=") && !raw.includes("&")) return decodeURIComponent(raw);
+  return new URLSearchParams(location.search).get("token");
 }
 
-export function setShowEvents(value) {
-  update((s) => {
-    s.prefs = { ...s.prefs, showEvents: value };
-  });
+function reflectTokenInUrl() {
+  const url = new URL(location.href);
+  url.search = token ? `?${token}` : "";
+  history.replaceState(null, "", url.toString());
 }
 
-function saveRaw(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export function getToken() {
+  return token;
+}
+export function getName() {
+  return state.name;
+}
+export function getShareUrl() {
+  return token ? `${location.origin}/?${token}` : null;
+}
+/** Appelé une fois, quand un token vient d'être créé (pour rafraîchir l'UI). */
+export function onSession(cb) {
+  onTokenCreated = cb;
 }
 
-function update(mutator) {
-  const data = loadRaw();
-  mutator(data);
-  saveRaw(data);
+export async function initSession() {
+  token = readTokenFromUrl() || localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    try {
+      const res = await fetch(`/api/settings?token=${encodeURIComponent(token)}`);
+      if (res.ok) {
+        state = normalize(await res.json());
+        localStorage.setItem(TOKEN_KEY, token);
+        reflectTokenInUrl();
+        return;
+      }
+      // token inconnu (404) : on repart sur les réglages locaux
+      token = null;
+      localStorage.removeItem(TOKEN_KEY);
+      reflectTokenInUrl();
+    } catch {
+      // réseau indisponible : on garde le cache local
+      token = null;
+    }
+  }
+  state = loadLegacyLocal();
+}
+
+function settingsPayload() {
+  return {
+    overrides: state.overrides,
+    order: state.order,
+    customBeaches: state.customBeaches,
+    prefs: state.prefs,
+  };
+}
+
+function scheduleSave() {
+  localStorage.setItem(LEGACY_KEY, JSON.stringify(settingsPayload()));
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 700);
+}
+
+async function saveNow() {
+  try {
+    if (!token) {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: state.name, settings: settingsPayload() }),
+      });
+      if (!res.ok) return;
+      token = (await res.json()).token;
+      localStorage.setItem(TOKEN_KEY, token);
+      reflectTokenInUrl();
+      if (onTokenCreated) onTokenCreated();
+    } else {
+      await fetch(`/api/settings?token=${encodeURIComponent(token)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: state.name, settings: settingsPayload() }),
+      });
+    }
+  } catch {
+    // silencieux : le cache local est déjà à jour, réessai au prochain changement
+  }
+}
+
+export function setName(name) {
+  state.name = String(name).slice(0, 40);
+  scheduleSave();
 }
 
 export function setThreshold(beachId, value) {
-  update((s) => {
-    s.overrides[beachId] = { ...s.overrides[beachId], swim_threshold_m: value };
-  });
+  state.overrides[beachId] = { ...state.overrides[beachId], swim_threshold_m: value };
+  scheduleSave();
 }
 
-/** Temps de trajet perso (minutes) jusqu'au lieu, pour calculer l'heure de départ. */
 export function setTravelMinutes(beachId, minutes) {
-  update((s) => {
-    s.overrides[beachId] = { ...s.overrides[beachId], travel_minutes: minutes };
-  });
+  state.overrides[beachId] = { ...state.overrides[beachId], travel_minutes: minutes };
+  scheduleSave();
 }
 
 export function setColor(beachId, color) {
-  update((s) => {
-    s.overrides[beachId] = { ...s.overrides[beachId], color };
-  });
+  state.overrides[beachId] = { ...state.overrides[beachId], color };
+  scheduleSave();
 }
 
-/** currentFavoriteCount permet de refuser l'activation au-delà de MAX_FAVORITES. */
 export function toggleFavorite(beachId, isCurrentlyFavorite, currentFavoriteCount) {
   if (!isCurrentlyFavorite && currentFavoriteCount >= MAX_FAVORITES) return;
-  update((s) => {
-    s.overrides[beachId] = { ...s.overrides[beachId], favorite: !isCurrentlyFavorite };
-  });
+  state.overrides[beachId] = { ...state.overrides[beachId], favorite: !isCurrentlyFavorite };
+  scheduleSave();
 }
 
 export function setOrder(orderedIds) {
-  update((s) => {
-    s.order = orderedIds;
-  });
+  state.order = orderedIds;
+  scheduleSave();
 }
 
 export function addCustomBeach(name, thresholdM, usedColors = []) {
   const id = `custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const used = new Set(usedColors);
   const color = COLOR_PALETTE.find((c) => !used.has(c)) || COLOR_PALETTE[0];
-  update((s) => {
-    s.customBeaches.push({ id, name, swim_threshold_m: thresholdM, color, custom: true });
-  });
+  state.customBeaches.push({ id, name, swim_threshold_m: thresholdM, color, custom: true });
+  scheduleSave();
   return id;
 }
 
 export function removeCustomBeach(beachId) {
-  update((s) => {
-    s.customBeaches = s.customBeaches.filter((b) => b.id !== beachId);
-    s.order = s.order.filter((id) => id !== beachId);
-    delete s.overrides[beachId];
-  });
+  state.customBeaches = state.customBeaches.filter((b) => b.id !== beachId);
+  state.order = state.order.filter((id) => id !== beachId);
+  delete state.overrides[beachId];
+  scheduleSave();
 }
 
+export function getPrefs() {
+  return { showEvents: state.prefs.showEvents ?? true };
+}
+
+export function setShowEvents(value) {
+  state.prefs = { ...state.prefs, showEvents: value };
+  scheduleSave();
+}
+
+/** Réinitialise les réglages de baignade (garde le nom et le token). */
 export function resetAll() {
-  localStorage.removeItem(STORAGE_KEY);
+  state = { ...emptyState(), name: state.name };
+  scheduleSave();
 }
 
 /**
- * Fusionne beaches.json + plages custom + surcharges (seuil/couleur/favori)
- * + ordre d'affichage global. Renvoie la liste finale utilisée partout
- * dans l'app (cartes, légende, graph).
+ * Fusionne beaches.json + plages custom + surcharges (seuil/couleur/favori/
+ * trajet) + ordre d'affichage global. Renvoie la liste finale utilisée partout.
  */
 export function buildBeachList(baseBeaches) {
-  const settings = loadRaw();
-
+  const s = state;
   const all = [
     ...baseBeaches.map((b) => ({ ...b, favorite: b.default_favorite ?? false, custom: false })),
-    ...settings.customBeaches.map((b) => ({ ...b, favorite: false })),
+    ...s.customBeaches.map((b) => ({ ...b, favorite: false })),
   ];
 
   const merged = all.map((b) => ({
     ...b,
-    swim_threshold_m: settings.overrides[b.id]?.swim_threshold_m ?? b.swim_threshold_m,
-    color: settings.overrides[b.id]?.color ?? b.color,
-    favorite: settings.overrides[b.id]?.favorite ?? b.favorite,
-    travel_minutes: settings.overrides[b.id]?.travel_minutes ?? b.travel_minutes ?? 0,
+    swim_threshold_m: s.overrides[b.id]?.swim_threshold_m ?? b.swim_threshold_m,
+    color: s.overrides[b.id]?.color ?? b.color,
+    favorite: s.overrides[b.id]?.favorite ?? b.favorite,
+    travel_minutes: s.overrides[b.id]?.travel_minutes ?? b.travel_minutes ?? 0,
   }));
 
-  const orderIndex = new Map(settings.order.map((id, i) => [id, i]));
+  const orderIndex = new Map(s.order.map((id, i) => [id, i]));
   merged.sort((a, b) => {
     const ia = orderIndex.has(a.id) ? orderIndex.get(a.id) : Infinity;
     const ib = orderIndex.has(b.id) ? orderIndex.get(b.id) : Infinity;

@@ -130,6 +130,14 @@ export default async (req) => {
     return json(await collectStats());
   }
 
+  if (action === "deltoken" && req.method === "POST") {
+    if (!(await isAdmin(req))) return json({ error: "unauthorized" }, 401);
+    const t = new URL(req.url).searchParams.get("token");
+    if (!t) return json({ error: "missing_token" }, 400);
+    await getStore({ name: "settings", consistency: "strong" }).delete(t);
+    return json({ ok: true });
+  }
+
   // Gestion de contenu (lieux, évènements) — admin uniquement
   const origin = new URL(req.url).origin;
 

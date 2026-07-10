@@ -128,7 +128,7 @@ export default async (req) => {
   try {
     const [tides, eventsCfg] = await Promise.all([
       fetch(`${origin}/data/la-rochelle-pallice/high_low_tides.json`).then((r) => r.json()),
-      fetch(`${origin}/config/events.json`)
+      fetch(`${origin}/api/events`)
         .then((r) => r.json())
         .catch(() => ({ events: [] })),
     ]);

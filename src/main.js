@@ -922,7 +922,9 @@ async function render() {
     const [{ levels, tides, meta }, baseBeachesConfig, eventsConfig] = await Promise.all([
       loadStationData("la-rochelle-pallice"),
       loadBeaches(),
-      fetch("/config/events.json").then((r) => r.json()).catch(() => ({ events: [] })),
+      fetch("/api/events")
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .catch(() => fetch("/config/events.json").then((r) => r.json()).catch(() => ({ events: [] }))),
     ]);
     const events = eventsConfig.events || [];
     const allBeaches = buildBeachList(baseBeachesConfig.beaches);

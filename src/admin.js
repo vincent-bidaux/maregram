@@ -79,6 +79,7 @@ function shell() {
       <nav class="admin-tabs">
         <button class="tab-btn" data-tab="stats">Stats</button>
         <button class="tab-btn" data-tab="beaches">Lieux</button>
+        <button class="tab-btn" data-tab="events">Événements</button>
       </nav>
       <div id="tab-content"></div>
     </div>`;
@@ -98,7 +99,8 @@ function shell() {
 function renderTab() {
   root.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === currentTab));
   if (currentTab === "stats") renderStats();
-  else renderBeaches();
+  else if (currentTab === "beaches") renderBeaches();
+  else renderEvents();
 }
 
 const content = () => root.querySelector("#tab-content");
@@ -125,6 +127,7 @@ async function renderStats() {
         <td>${u.name ? esc(u.name) : '<span class="muted">—</span>'}</td>
         <td>${fmtDateTime(u.createdAt)}</td>
         <td title="${fmtDateTime(u.lastSeen)}">${esc(rel(u.lastSeen))}</td>
+        <td><button class="mini danger del-token" data-token="${esc(u.token)}" title="Supprimer ce dossier">✕</button></td>
       </tr>`
     )
     .join("");
@@ -146,8 +149,8 @@ async function renderStats() {
     <h2>Tokens & utilisateurs</h2>
     <div class="table-scroll">
       <table class="admin-table">
-        <thead><tr><th>Token</th><th>Nom</th><th>Créé le</th><th>Dernière visite</th></tr></thead>
-        <tbody>${usersRows || '<tr><td class="muted" colspan="4">Aucun utilisateur</td></tr>'}</tbody>
+        <thead><tr><th>Token</th><th>Nom</th><th>Créé le</th><th>Dernière visite</th><th></th></tr></thead>
+        <tbody>${usersRows || '<tr><td class="muted" colspan="5">Aucun utilisateur</td></tr>'}</tbody>
       </table>
     </div>
     <div class="two-col">
@@ -160,6 +163,15 @@ async function renderStats() {
         <table class="admin-table"><thead><tr><th>Lieu</th><th>Occurrences</th></tr></thead><tbody>${customRows}</tbody></table>
       </div>
     </div>`;
+
+  content().querySelectorAll(".del-token").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const token = btn.dataset.token;
+      if (!confirm(`Supprimer définitivement le dossier ${token} ?`)) return;
+      await fetch(`/api/admin/deltoken?token=${encodeURIComponent(token)}`, { method: "POST" }).catch(() => {});
+      renderStats();
+    })
+  );
 }
 
 // -------------------------------------------------------------------- lieux
@@ -358,6 +370,184 @@ function setupActiveDrag() {
       document.addEventListener("pointermove", onMove);
       document.addEventListener("pointerup", onUp);
     });
+  });
+}
+
+// ------------------------------------------------------------- événements
+let events = [];
+let eventsLoaded = false;
+let evSaveTimer = null;
+const EVENT_ICONS_LIST = [
+  ["music", "♪ Musique"],
+  ["trophy", "🏆 Trophée"],
+];
+
+const eventLabelText = (ev) => (typeof ev.label === "string" ? ev.label : ev.label?.fr || ev.label?.en || "");
+const findEv = (uid) => events.find((e) => e._uid === uid);
+
+// Conversions Paris <-> UTC pour les champs datetime-local (qui sont sans fuseau)
+function parisOffsetMs(utcMs) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Paris",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const m = {};
+  for (const p of dtf.formatToParts(new Date(utcMs))) m[p.type] = p.value;
+  const h = m.hour === "24" ? 0 : Number(m.hour);
+  return Date.UTC(+m.year, +m.month - 1, +m.day, h, +m.minute, +m.second) - utcMs;
+}
+
+function parisWallToISO(wall) {
+  if (!wall) return null;
+  const [dp, tp] = wall.split("T");
+  const [y, mo, da] = dp.split("-").map(Number);
+  const [h, mi] = tp.split(":").map(Number);
+  const naive = Date.UTC(y, mo - 1, da, h, mi);
+  const off = parisOffsetMs(naive - parisOffsetMs(naive));
+  return new Date(naive - off).toISOString();
+}
+
+function isoToParisWall(iso) {
+  if (!iso) return "";
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const m = {};
+  for (const p of dtf.formatToParts(new Date(iso))) m[p.type] = p.value;
+  const hh = m.hour === "24" ? "00" : m.hour;
+  return `${m.year}-${m.month}-${m.day}T${hh}:${m.minute}`;
+}
+
+function setEvStatus(text) {
+  const el = root.querySelector(".ev-status");
+  if (el) el.textContent = text;
+}
+
+async function saveEventsNow() {
+  setEvStatus("Enregistrement…");
+  const payload = { events: events.map(({ _uid, ...e }) => e) };
+  try {
+    const r = await fetch("/api/admin/events", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setEvStatus(r.ok ? "Enregistré ✓" : "Erreur d'enregistrement");
+  } catch {
+    setEvStatus("Hors ligne — non enregistré");
+  }
+}
+
+function debouncedSaveEvents() {
+  setEvStatus("Modifié…");
+  clearTimeout(evSaveTimer);
+  evSaveTimer = setTimeout(saveEventsNow, 600);
+}
+
+function saveEventsAndRerender() {
+  renderEvents();
+  saveEventsNow();
+}
+
+function eventRow(ev) {
+  const isPub = ev.published !== false;
+  return `
+    <div class="beach-admin-row event-admin-row" data-uid="${esc(ev._uid)}">
+      <div class="beach-admin-main">
+        <div class="beach-admin-top">
+          <input type="text" class="f-name e-label" value="${esc(eventLabelText(ev))}" placeholder="Libellé" />
+          <select class="e-icon">${EVENT_ICONS_LIST.map(([v, l]) => `<option value="${v}" ${ev.icon === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+          <button class="mini toggle-pub" type="button">${isPub ? "▲ Publié" : "▼ Brouillon"}</button>
+          <button class="mini danger del" type="button" title="Supprimer">✕</button>
+        </div>
+        <div class="beach-admin-fields">
+          <label>Début <input type="datetime-local" class="e-start" value="${isoToParisWall(ev.start)}" /></label>
+          <label>Fin <input type="datetime-local" class="e-end" value="${isoToParisWall(ev.end)}" /></label>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function renderEvents() {
+  if (!eventsLoaded) {
+    content().innerHTML = `<p>Chargement des évènements…</p>`;
+    const cfg = await fetch("/api/admin/events").then((r) => r.json());
+    events = (cfg.events || []).map((e, i) => ({ ...e, _uid: `ev${i}_${Math.random().toString(36).slice(2, 6)}` }));
+    eventsLoaded = true;
+  }
+  const active = events.filter((e) => e.published !== false);
+  const drafts = events.filter((e) => e.published === false);
+
+  content().innerHTML = `
+    <div class="beaches-head">
+      <p class="muted">Les évènements <strong>publiés</strong> apparaissent sur la frise de tous les utilisateurs et dans le calendrier iCal. Heures en heure de Paris.</p>
+      <span class="save-status ev-status"></span>
+    </div>
+    <h2>Publiés · <span class="muted">${active.length}</span></h2>
+    <div class="event-admin-list">${active.map(eventRow).join("") || '<p class="muted empty">Aucun évènement publié.</p>'}</div>
+    <h2>Brouillons · <span class="muted">${drafts.length}</span></h2>
+    <div class="event-admin-list">${drafts.map(eventRow).join("") || '<p class="muted empty">Aucun brouillon.</p>'}</div>
+    <form class="add-event-admin">
+      <input type="text" name="label" placeholder="Libellé d'un nouvel évènement" required />
+      <label>Début <input type="datetime-local" name="start" required /></label>
+      <label>Fin <input type="datetime-local" name="end" required /></label>
+      <select name="icon">${EVENT_ICONS_LIST.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
+      <button type="submit">+ Ajouter (brouillon)</button>
+    </form>`;
+
+  content().querySelectorAll(".event-admin-row").forEach((row) => {
+    const ev = findEv(row.dataset.uid);
+    if (!ev) return;
+    row.querySelector(".e-label").addEventListener("input", (e) => {
+      ev.label = e.target.value;
+      debouncedSaveEvents();
+    });
+    row.querySelector(".e-icon").addEventListener("change", (e) => {
+      ev.icon = e.target.value;
+      debouncedSaveEvents();
+    });
+    row.querySelector(".e-start").addEventListener("change", (e) => {
+      const iso = parisWallToISO(e.target.value);
+      if (iso) ev.start = iso;
+      debouncedSaveEvents();
+    });
+    row.querySelector(".e-end").addEventListener("change", (e) => {
+      const iso = parisWallToISO(e.target.value);
+      if (iso) ev.end = iso;
+      debouncedSaveEvents();
+    });
+    row.querySelector(".toggle-pub").addEventListener("click", () => {
+      ev.published = ev.published === false;
+      saveEventsAndRerender();
+    });
+    row.querySelector(".del").addEventListener("click", () => {
+      if (!confirm(`Supprimer « ${eventLabelText(ev)} » ?`)) return;
+      events = events.filter((x) => x !== ev);
+      saveEventsAndRerender();
+    });
+  });
+
+  content().querySelector(".add-event-admin").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const label = f.label.value.trim();
+    const start = parisWallToISO(f.start.value);
+    const end = parisWallToISO(f.end.value);
+    if (!label || !start || !end) return;
+    events.push({ _uid: `ev_${Date.now().toString(36)}`, start, end, label, icon: f.icon.value, published: false });
+    saveEventsAndRerender();
   });
 }
 

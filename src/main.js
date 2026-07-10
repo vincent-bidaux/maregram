@@ -151,52 +151,6 @@ function wrapEventLabel(text, maxWidth) {
   return [parts.slice(0, bestI).join(sep), parts.slice(bestI).join(sep)];
 }
 
-/**
- * Évènements temporels affichés en superposition de la frise (préfiguration
- * d'un overlay générique : évènements locaux, alertes, etc.).
- * icon: clé dans EVENT_ICONS.
- */
-const TIMELINE_EVENTS = [
-  // Francofolies de La Rochelle 2026 (10-14 juillet), Scène Jean-Louis
-  // Foulquier. Début officiel 18h00 ; fin de soirée approximative (minuit).
-  {
-    start: "2026-07-10T18:00:00+02:00",
-    end: "2026-07-11T00:00:00+02:00",
-    label: "Francofolies : Gims · Youssou Ndour · Zaz · Luiza",
-    icon: "music",
-  },
-  {
-    start: "2026-07-11T18:00:00+02:00",
-    end: "2026-07-12T00:00:00+02:00",
-    label: "Francofolies : Niska · Jok'Air · L2B · La Mano 1.9",
-    icon: "music",
-  },
-  {
-    start: "2026-07-12T18:00:00+02:00",
-    end: "2026-07-13T00:00:00+02:00",
-    label: "Francofolies : Orelsan · Gaël Faye · Skip The Use · Miki",
-    icon: "music",
-  },
-  {
-    start: "2026-07-13T18:00:00+02:00",
-    end: "2026-07-14T00:00:00+02:00",
-    label: "Francofolies : Aya Nakamura · Louane · Helena · Marguerite",
-    icon: "music",
-  },
-  {
-    start: "2026-07-14T18:00:00+02:00",
-    end: "2026-07-15T00:00:00+02:00",
-    label: "Francofolies : Mika · Feu! Chatterton · Gaëtan Roussel · Sam Sauvage",
-    icon: "music",
-  },
-  {
-    start: "2026-07-19T21:00:00+02:00",
-    end: "2026-07-19T23:00:00+02:00",
-    label: { fr: "Finale de la coupe du monde", en: "World Cup final" },
-    icon: "trophy",
-  },
-];
-
 // Icônes 12×12, remplies en blanc translucide par le groupe appelant
 const EVENT_ICONS = {
   trophy: `
@@ -218,7 +172,7 @@ const EVENT_ICONS = {
  * marqueur rouge pour l'instant présent. Rendu en pixels réels (pas de
  * viewBox mise à l'échelle) pour être placé dans un conteneur scrollable.
  */
-function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
+function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = []) {
   if (levels.length < 2) return { html: "", totalWidth: 0, todayX: 0 };
 
   const rangeStart = new Date(levels[0].time);
@@ -252,7 +206,7 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true) {
   // bande sous les tranches en dépend.
   const eventsData = [];
   if (showEvents) {
-    for (const ev of TIMELINE_EVENTS) {
+    for (const ev of events) {
       const ex0 = x(new Date(ev.start).getTime());
       const ex1 = x(new Date(ev.end).getTime());
       if (ex1 < 0 || ex0 > w) continue;
@@ -544,6 +498,18 @@ function settingsPanelHtml(beaches) {
             <span>${tr("Afficher les événements locaux sur la timeline", "Show local events on the timeline")}</span>
           </label>
 
+          <h3>${tr("Calendrier des marées", "Tide calendar")}</h3>
+          <p class="meta">
+            ${tr(
+              "Abonne ton agenda (iPhone, Google, Outlook…) aux horaires de marées : un évènement par jour avec pleines/basses mers, hauteurs, coefficient et évènements locaux.",
+              "Subscribe your calendar (iPhone, Google, Outlook…) to the tide times: one all-day event per day with high/low tides, heights, coefficient and local events."
+            )}
+          </p>
+          <div class="calendar-actions">
+            <a class="calendar-subscribe" href="#">${tr("S'abonner au calendrier", "Subscribe to calendar")}</a>
+            <button type="button" class="calendar-copy">${tr("Copier le lien", "Copy link")}</button>
+          </div>
+
           <button class="settings-reset" type="button">${tr("Réinitialiser les valeurs par défaut", "Reset to defaults")}</button>
 
           <h3>${tr("Langue", "Language")}</h3>
@@ -581,6 +547,25 @@ function setupSettingsPanel() {
     eventsToggle.addEventListener("change", () => {
       setShowEvents(eventsToggle.checked);
       render();
+    });
+  }
+
+  // Calendrier : webcal:// ouvre le dialogue d'abonnement (iOS/macOS/Outlook) ;
+  // le bouton copie l'URL https pour Google Agenda et autres
+  const subscribeLink = overlay.querySelector(".calendar-subscribe");
+  const copyBtn = overlay.querySelector(".calendar-copy");
+  if (subscribeLink) subscribeLink.href = `webcal://${location.host}/calendar.ics`;
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      const url = `${location.origin}/calendar.ics`;
+      try {
+        await navigator.clipboard.writeText(url);
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = tr("Lien copié ✓", "Link copied ✓");
+        setTimeout(() => (copyBtn.textContent = prev), 1800);
+      } catch {
+        prompt(tr("Copie ce lien :", "Copy this link:"), url);
+      }
     });
   }
 
@@ -816,10 +801,12 @@ async function render() {
       .map((c) => c.dataset.beachId)
   );
   try {
-    const [{ levels, tides, meta }, baseBeachesConfig] = await Promise.all([
+    const [{ levels, tides, meta }, baseBeachesConfig, eventsConfig] = await Promise.all([
       loadStationData("la-rochelle-pallice"),
       loadBeaches(),
+      fetch("/config/events.json").then((r) => r.json()).catch(() => ({ events: [] })),
     ]);
+    const events = eventsConfig.events || [];
     const allBeaches = buildBeachList(baseBeachesConfig.beaches);
     const favoriteBeaches = allBeaches.filter((b) => b.favorite).slice(0, MAX_FAVORITES);
 
@@ -832,7 +819,7 @@ async function render() {
       .map((b) => beachStatus(b, levels, now))
       .join("");
 
-    const curve = curveSvg(levels, tides, now, favoriteBeaches, getPrefs().showEvents);
+    const curve = curveSvg(levels, tides, now, favoriteBeaches, getPrefs().showEvents, events);
     const stationDisplay = STATION_DISPLAY_NAMES[meta.site] || meta.site.toUpperCase();
 
     const staleBanner = dataStale

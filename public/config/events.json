@@ -1,0 +1,10 @@
+{
+  "events": [
+    { "start": "2026-07-10T18:00:00+02:00", "end": "2026-07-11T00:00:00+02:00", "label": "Francofolies : Gims · Youssou Ndour · Zaz · Luiza", "icon": "music" },
+    { "start": "2026-07-11T18:00:00+02:00", "end": "2026-07-12T00:00:00+02:00", "label": "Francofolies : Niska · Jok'Air · L2B · La Mano 1.9", "icon": "music" },
+    { "start": "2026-07-12T18:00:00+02:00", "end": "2026-07-13T00:00:00+02:00", "label": "Francofolies : Orelsan · Gaël Faye · Skip The Use · Miki", "icon": "music" },
+    { "start": "2026-07-13T18:00:00+02:00", "end": "2026-07-14T00:00:00+02:00", "label": "Francofolies : Aya Nakamura · Louane · Helena · Marguerite", "icon": "music" },
+    { "start": "2026-07-14T18:00:00+02:00", "end": "2026-07-15T00:00:00+02:00", "label": "Francofolies : Mika · Feu! Chatterton · Gaëtan Roussel · Sam Sauvage", "icon": "music" },
+    { "start": "2026-07-19T21:00:00+02:00", "end": "2026-07-19T23:00:00+02:00", "label": { "fr": "Finale de la coupe du monde", "en": "World Cup final" }, "icon": "trophy" }
+  ]
+}

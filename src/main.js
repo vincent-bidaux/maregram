@@ -541,6 +541,10 @@ function tideListRow(tides, now) {
   return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
 
+// Masqué temporairement (demande explicite) : le code du sélecteur reste en
+// place, prêt à être réactivé, mais la section n'apparaît plus en réglages.
+const SHOW_THEME_PICKER = false;
+
 const THEME_OPTIONS = [
   ["dark", "Sombre", "Dark"],
   ["light", "Clair", "Light"],
@@ -674,8 +678,10 @@ function settingsPanelHtml(beaches) {
                 <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
               </div>
             `,
-            // Thème (dont deux modes N&B pensés pour un écran e-ink mural)
-            `
+            // Thème (dont deux modes N&B pensés pour un écran e-ink mural) — masqué pour le moment
+            !SHOW_THEME_PICKER
+              ? null
+              : `
               <h3>${tr("Thème", "Theme")}</h3>
               <div class="theme-grid">
                 ${THEME_OPTIONS.map(

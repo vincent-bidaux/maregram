@@ -261,9 +261,10 @@ h1 {
   opacity: 0.7;
 }
 
-/* Contour de fond à peine visible : juste un repère, pas un cadran plein */
+/* Contour de fond discret mais repérable comme un cadran — nettement moins
+   marqué que l'arc qui se dessine avec l'aiguille. */
 .refresh-pie .ring-base {
-  opacity: 0.1;
+  opacity: 0.28;
 }
 
 /* L'arc "se dessine" au fil de la minute, plus marqué (trait plus épais) que

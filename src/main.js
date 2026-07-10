@@ -15,6 +15,7 @@ import {
   COLOR_PALETTE,
   getPrefs,
   setShowEvents,
+  setTheme,
   setThreshold,
   setTravelMinutes,
   setColor,
@@ -529,6 +530,13 @@ function tideListRow(tides, now) {
   return `<div class="tide-list">${items}</div>${amplitudeHtml}`;
 }
 
+const THEME_OPTIONS = [
+  ["dark", "Sombre", "Dark"],
+  ["light", "Clair", "Light"],
+  ["bw", "Noir & blanc", "Black & white"],
+  ["bw-invert", "N&B inversé", "B&W inverted"],
+];
+
 /** Interrupteur style iOS (piste + curseur), toujours à droite de son label. */
 const iosToggle = (className, checked) => `
   <span class="ios-switch">
@@ -653,6 +661,17 @@ function settingsPanelHtml(beaches) {
               <div class="lang-toggle">
                 <button type="button" class="lang-btn ${LANG === "fr" ? "active" : ""}" data-lang="fr">Français</button>
                 <button type="button" class="lang-btn ${LANG === "en" ? "active" : ""}" data-lang="en">English</button>
+              </div>
+            `,
+            // Thème (dont deux modes N&B pensés pour un écran e-ink mural)
+            `
+              <h3>${tr("Thème", "Theme")}</h3>
+              <div class="theme-grid">
+                ${THEME_OPTIONS.map(
+                  ([value, labelFr, labelEn]) => `
+                  <button type="button" class="theme-btn ${getPrefs().theme === value ? "active" : ""}" data-theme-value="${value}">${tr(labelFr, labelEn)}</button>
+                `
+                ).join("")}
               </div>
             `,
             // Dashboard personnel
@@ -817,6 +836,14 @@ function setupSettingsPanel() {
       const changed = btn.dataset.lang !== LANG;
       setLang(btn.dataset.lang); // persiste le choix explicite même sans changement
       if (changed) render();
+    });
+  });
+
+  overlay.querySelectorAll(".theme-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setTheme(btn.dataset.themeValue);
+      document.documentElement.dataset.theme = btn.dataset.themeValue;
+      overlay.querySelectorAll(".theme-btn").forEach((b) => b.classList.toggle("active", b === btn));
     });
   });
 
@@ -1072,6 +1099,7 @@ async function render() {
       : "";
 
     document.documentElement.lang = LANG;
+    document.documentElement.dataset.theme = getPrefs().theme;
 
     const tideName = (type) =>
       type === "high" ? tr("pleine mer", "high tide") : tr("basse mer", "low tide");
@@ -1088,6 +1116,7 @@ async function render() {
       : "";
 
     app.innerHTML = `
+      <div id="theme-scope">
       ${adminCard}
       ${staleBanner}
       <div class="hero-card">
@@ -1151,6 +1180,7 @@ async function render() {
           <a href="${tr("https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr", "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en")}" target="_blank" rel="license noopener"><img src="/cc-by-nc-sa.png" alt="${tr("Licence CC BY-NC-SA 4.0", "CC BY-NC-SA 4.0 licence")}" class="cc-badge" width="80" height="15" /></a>
         </p>
       </footer>
+      </div>
 
       ${settingsPanelHtml(allBeaches)}
     `;

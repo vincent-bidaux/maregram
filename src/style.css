@@ -9,6 +9,33 @@
   color-scheme: dark;
 }
 
+/* Mode clair : fond crème presque blanc, texte foncé, mêmes couleurs d'accent
+   et de statut que le mode sombre. Sert aussi de base aux modes N&B ci-dessous
+   (papier clair avant désaturation/inversion). */
+[data-theme="light"],
+[data-theme="bw"],
+[data-theme="bw-invert"] {
+  --bg: #faf6ec;
+  --surface: #ffffff;
+  --text: #223038;
+  --muted: #66757d;
+  color-scheme: light;
+}
+
+/* Modes noir & blanc (pensés pour un écran e-ink mural) : on désature tout le
+   contenu visible via un filtre plutôt que de retoucher chaque couleur codée
+   en dur (plages, évènements…). Le filtre est posé sur #theme-scope, PAS sur
+   <html>/<body>/#app, pour ne pas devenir le bloc de positionnement du panneau
+   de réglages qui est en position:fixed (sinon il se déboîterait du viewport
+   au scroll). Positif = papier clair + encre noire ; négatif = l'inverse. */
+[data-theme="bw"] #theme-scope {
+  filter: grayscale(1) contrast(1.05);
+}
+
+[data-theme="bw-invert"] #theme-scope {
+  filter: grayscale(1) invert(1) contrast(1.05);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -55,6 +82,8 @@ h1 {
   padding: 0.7rem 1rem;
   margin-bottom: 1rem;
   font-size: 0.85rem;
+  /* Fond orange fixe quel que soit le thème : texte clair fixé pareillement. */
+  color: #fff;
 }
 
 .admin-card-link {
@@ -90,7 +119,14 @@ h1 {
 
 .hero-card {
   --card-pad: 1.5rem;
+  /* Toujours un fond dégradé sombre, quel que soit le thème (clair, N&B…) :
+     on fige donc --text/--muted en valeurs "claires" pour ce sous-arbre,
+     plutôt que d'hériter les valeurs globales du thème (qui deviennent
+     sombres en mode clair et casseraient le contraste). */
+  --text: #eaf4f9;
+  --muted: #82a6ba;
   background: linear-gradient(160deg, #234b68 0%, #14304a 45%, #0d2138 100%);
+  color: var(--text);
   border-radius: 10px;
   padding: var(--card-pad) var(--card-pad) 1.25rem;
   box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.6);
@@ -908,6 +944,30 @@ body.modal-open {
 }
 
 .lang-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0a1622;
+  font-weight: 700;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.theme-btn {
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(130, 166, 186, 0.35);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.theme-btn.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #0a1622;

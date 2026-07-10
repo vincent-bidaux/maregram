@@ -192,12 +192,23 @@ export function removeCustomBeach(beachId) {
   scheduleSave();
 }
 
+export const THEMES = ["dark", "light", "bw", "bw-invert"];
+
 export function getPrefs() {
-  return { showEvents: state.prefs.showEvents ?? true };
+  return {
+    showEvents: state.prefs.showEvents ?? true,
+    theme: THEMES.includes(state.prefs.theme) ? state.prefs.theme : "dark",
+  };
 }
 
 export function setShowEvents(value) {
   state.prefs = { ...state.prefs, showEvents: value };
+  scheduleSave();
+}
+
+export function setTheme(value) {
+  if (!THEMES.includes(value)) return;
+  state.prefs = { ...state.prefs, theme: value };
   scheduleSave();
 }
 

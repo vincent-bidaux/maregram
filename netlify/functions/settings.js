@@ -43,7 +43,9 @@ function cleanSettings(s = {}) {
 }
 
 export default async (req) => {
-  const store = getStore("settings");
+  // cohérence forte : un GET juste après un POST/PUT doit voir la dernière valeur
+  // (par défaut Blobs est eventually consistent en production)
+  const store = getStore({ name: "settings", consistency: "strong" });
   const token = new URL(req.url).searchParams.get("token");
 
   try {

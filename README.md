@@ -168,8 +168,19 @@ valider cette architecture.
 `src/changelog-data.js` est la source de vérité unique pour `APP_VERSION`
 (actuellement **10.2**) et pour le contenu de `/nouveautes/`. **À chaque
 nouvelle fonctionnalité visible par les utilisateurs** (pas les outils
-admin), incrémenter `APP_VERSION` et ajouter une entrée en tête de
-`CHANGELOG` (ordre antéchronologique, bilingue fr/en, avec la date).
+admin) :
+
+1. Incrémenter `APP_VERSION` et ajouter une entrée en tête de `CHANGELOG`
+   (ordre antéchronologique, bilingue fr/en, avec la date).
+2. Poser un tag git annoté `vX.Y` sur le commit correspondant et créer la
+   [GitHub Release](https://github.com/vincent-bidaux/maree-la-rochelle/releases)
+   associée (`git tag -a vX.Y -m "..."`, `git push origin vX.Y`, puis
+   `gh release create vX.Y --notes "..."`) — reprendre le texte de la nouvelle
+   entrée du changelog comme notes de version.
+
+Les versions sont donc visibles à trois endroits qui doivent rester
+cohérents : le footer du site, `/nouveautes/`, et l'onglet **Releases** de
+GitHub.
 
 ## Données & limites connues
 

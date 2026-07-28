@@ -1,4 +1,8 @@
-# Marées La Rochelle (Marégram)
+# Marégram — Marées La Rochelle
+
+[![Site](https://img.shields.io/badge/site-maree--la--rochelle.netlify.app-5ec4ea)](https://maree-la-rochelle.netlify.app)
+[![Nouveautés](https://img.shields.io/badge/changelog-nouveautés-informational)](https://maree-la-rochelle.netlify.app/nouveautes/)
+[![Licence](https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey)](LICENSE.md)
 
 Dashboard de marées pour La Rochelle et ses plages : marée en cours, courbe de
 hauteur d'eau, **créneaux de baignade par plage** (horaires à partir desquels
@@ -6,15 +10,19 @@ il y a assez d'eau pour se baigner, selon un seuil réglable par plage),
 évènements locaux sur la frise, réglages personnels synchronisés en ligne, et
 une console d'administration.
 
-- **Prod (site public)** : https://maree-la-rochelle.netlify.app
-- **Admin** : https://maree-la-rochelle.netlify.app/admin/
+- **Site** : https://maree-la-rochelle.netlify.app
+- **Admin** (protégé par mot de passe) : https://maree-la-rochelle.netlify.app/admin/
 - **Nouveautés (changelog public)** : https://maree-la-rochelle.netlify.app/nouveautes/
-- **Dépôt GitHub** : `vincent-bidaux/maree-la-rochelle` (privé)
+- **Dépôt GitHub** : `vincent-bidaux/maree-la-rochelle` (public, open source)
 - **Nom public de l'app** : Marégram (le dépôt GitHub et l'URL Netlify ont
   gardé leur nom d'origine `maree-la-rochelle`, jamais renommés)
 - **Dossier local** : peut s'appeler autre chose que le repo GitHub sur ta
   machine (ex. `~/git/maregram`) — un renommage de dossier local n'a aucun
   impact sur git, GitHub ou Netlify, qui n'en ont pas connaissance.
+
+Projet personnel, code source ouvert sous licence CC BY-NC-SA 4.0 : libre de
+cloner/modifier/redistribuer en créditant l'auteur et en gardant la même
+licence, mais pas d'usage commercial (voir [LICENSE.md](LICENSE.md)).
 
 ## Continuer à développer depuis une autre machine
 

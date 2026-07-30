@@ -3,7 +3,7 @@
   "requested_from": "2026-06-01",
   "requested_to": "2026-09-30",
   "date_from": "2026-06-05",
-  "date_to": "2026-08-25",
+  "date_to": "2026-08-28",
   "step_minutes": 10,
   "source": "api-maree.fr (CC-BY)",
   "attribution": "Hauteurs d'eau diffusées par api-maree.fr, calculées à partir de composantes harmoniques IFREMER / PREVIMER.",

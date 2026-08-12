@@ -1284,7 +1284,12 @@ function setupCurveScroll(initialScroll = null, levels = []) {
   const realTimeText = nowTimeEl?.textContent ?? "";
   const realHeightText = nowHeightEl?.textContent ?? "";
 
-  const nowCenterLeft = () => nowX - scrollEl.clientWidth / 2;
+  // `.curve-scroll` a un padding horizontal (`--card-pad`) : scrollLeft=0 montre
+  // ce padding avant même le début du contenu SVG (coordonnée 0 de nowX/pxPerDay),
+  // donc il faut le compenser pour que le centrage tombe juste (sinon décalage
+  // fixe systématique entre le point rouge et la barre orange).
+  const paddingLeft = parseFloat(getComputedStyle(scrollEl).paddingLeft) || 0;
+  const nowCenterLeft = () => nowX - scrollEl.clientWidth / 2 + paddingLeft;
   const isAtNow = () => Math.abs(scrollEl.scrollLeft - nowCenterLeft()) < 5;
 
   const setScrubUI = (scrubbing) => {
@@ -1300,7 +1305,7 @@ function setupCurveScroll(initialScroll = null, levels = []) {
       if (nowHeightEl) nowHeightEl.textContent = realHeightText;
       return;
     }
-    const centerX = scrollEl.scrollLeft + scrollEl.clientWidth / 2;
+    const centerX = scrollEl.scrollLeft + scrollEl.clientWidth / 2 - paddingLeft;
     const scrubDate = new Date(rangeStartMs + (centerX / pxPerDay) * 86400000);
     const h = interpolateLevelAt(levels, scrubDate);
     if (nowDateEl) nowDateEl.textContent = scrubDate.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" });

@@ -4,9 +4,17 @@
  * les corrections de bugs ni les outils internes/admin. Mis à jour à chaque
  * nouvelle fonctionnalité publiée (voir footer : lien "Nouveautés").
  */
-export const APP_VERSION = "10.2";
+export const APP_VERSION = "10.3";
 
 export const CHANGELOG = [
+  {
+    date: "2026-08-12",
+    title: { fr: "La frise centrée sur l'instant présent", en: "Timeline centered on the present moment" },
+    body: {
+      fr: "Le point rouge de l'instant présent est désormais centré à l'écran, avec un repère orange fixe. En faisant défiler la frise, la date/heure/hauteur en haut se mettent à jour en direct pour montrer la position survolée.",
+      en: "The red \"now\" dot is now centered on screen, with a fixed orange marker. Scrolling the timeline live-updates the date/time/height at the top to show whatever moment you're hovering over.",
+    },
+  },
   {
     date: "2026-07-10",
     title: { fr: "Thème clair et modes noir & blanc", en: "Light theme and black & white modes" },

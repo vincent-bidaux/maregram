@@ -1,7 +1,7 @@
 # Marégram — Marées La Rochelle
 
-[![Site](https://img.shields.io/badge/site-maree--la--rochelle.netlify.app-5ec4ea)](https://maree-la-rochelle.netlify.app)
-[![Nouveautés](https://img.shields.io/badge/changelog-nouveautés-informational)](https://maree-la-rochelle.netlify.app/nouveautes/)
+[![Site](https://img.shields.io/badge/site-maregram.netlify.app-5ec4ea)](https://maregram.netlify.app)
+[![Nouveautés](https://img.shields.io/badge/changelog-nouveautés-informational)](https://maregram.netlify.app/nouveautes/)
 [![Licence](https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey)](LICENSE.md)
 
 Dashboard de marées pour La Rochelle et ses plages : marée en cours, courbe de
@@ -10,15 +10,17 @@ il y a assez d'eau pour se baigner, selon un seuil réglable par plage),
 évènements locaux sur la frise, réglages personnels synchronisés en ligne, et
 une console d'administration.
 
-- **Site** : https://maree-la-rochelle.netlify.app
-- **Admin** (protégé par mot de passe) : https://maree-la-rochelle.netlify.app/admin/
-- **Nouveautés (changelog public)** : https://maree-la-rochelle.netlify.app/nouveautes/
-- **Dépôt GitHub** : `vincent-bidaux/maree-la-rochelle` (public, open source)
-- **Nom public de l'app** : Marégram (le dépôt GitHub et l'URL Netlify ont
-  gardé leur nom d'origine `maree-la-rochelle`, jamais renommés)
-- **Dossier local** : peut s'appeler autre chose que le repo GitHub sur ta
-  machine (ex. `~/git/maregram`) — un renommage de dossier local n'a aucun
-  impact sur git, GitHub ou Netlify, qui n'en ont pas connaissance.
+- **Site** : https://maregram.netlify.app
+- **Admin** (protégé par mot de passe) : https://maregram.netlify.app/admin/
+- **Nouveautés (changelog public)** : https://maregram.netlify.app/nouveautes/
+- **Dépôt GitHub** : `vincent-bidaux/maregram` (public, open source)
+- **Historique** : le projet s'est appelé `maree-la-rochelle` jusqu'au
+  renommage du 28 juillet 2026 (dossier local, dépôt GitHub, et site
+  Netlify harmonisés sur `maregram`). GitHub redirige automatiquement les
+  anciens liens `.../maree-la-rochelle` vers le nouveau nom, **mais
+  l'ancienne URL Netlify (`maree-la-rochelle.netlify.app`) est morte sans
+  redirection** — un abonnement iCal ou un ajout à l'écran d'accueil fait
+  avant cette date doit être refait avec la nouvelle URL.
 
 Projet personnel, code source ouvert sous licence CC BY-NC-SA 4.0 : libre de
 cloner/modifier/redistribuer en créditant l'auteur et en gardant la même
@@ -27,8 +29,8 @@ licence, mais pas d'usage commercial (voir [LICENSE.md](LICENSE.md)).
 ## Continuer à développer depuis une autre machine
 
 ```bash
-git clone https://github.com/vincent-bidaux/maree-la-rochelle.git
-cd maree-la-rochelle
+git clone https://github.com/vincent-bidaux/maregram.git
+cd maregram
 npm install                # seulement si tu veux builder/lancer en local
 ```
 
@@ -173,7 +175,7 @@ admin) :
 1. Incrémenter `APP_VERSION` et ajouter une entrée en tête de `CHANGELOG`
    (ordre antéchronologique, bilingue fr/en, avec la date).
 2. Poser un tag git annoté `vX.Y` sur le commit correspondant et créer la
-   [GitHub Release](https://github.com/vincent-bidaux/maree-la-rochelle/releases)
+   [GitHub Release](https://github.com/vincent-bidaux/maregram/releases)
    associée (`git tag -a vX.Y -m "..."`, `git push origin vX.Y`, puis
    `gh release create vX.Y --notes "..."`) — reprendre le texte de la nouvelle
    entrée du changelog comme notes de version.

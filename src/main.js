@@ -472,7 +472,13 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
   todayStart.setHours(0, 0, 0, 0);
   const todayX = x(todayStart.getTime());
 
-  return { html, totalWidth: w, todayX, nowX, rangeStartMs: t0 };
+  // Distance entre le bas du repère central orange et le bas du composant :
+  // la barre s'arrête au même niveau que le bas de la bande d'évènement
+  // (h + 20 en pixels rendus, en comptant le décalage -10 du viewBox), pour
+  // ne pas descendre dans la zone des libellés d'évènements en dessous.
+  const centerLineBottomPx = totalH - h - 10;
+
+  return { html, totalWidth: w, todayX, nowX, rangeStartMs: t0, centerLineBottomPx };
 }
 
 function legendHtml(beaches) {
@@ -1165,14 +1171,14 @@ async function render() {
               getName().trim()
                 ? `${stationDisplay} · ${tr("DASHBOARD DE", "DASHBOARD OF")} ${esc(getName().trim().toUpperCase())}`
                 : stationDisplay
-            }</p>
+            } <span class="refresh-wrap fade-target" title="${tr("Mise à jour de la page dans 1 min", "Page refreshes in 1 min")}">${refreshPieSvg()}</span></p>
             <h1 class="app-title">${tr("Marées &amp; Seuils de baignade", "Tides &amp; Swim thresholds")}</h1>
           </div>
           <button class="settings-btn" type="button" aria-label="${tr("Réglages", "Settings")}">${GEAR_ICON}</button>
         </div>
         <div class="now-row">
           <p class="now-line">
-            <span class="now-date">${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })}</span> · <span class="now-time">${fmtTime(now)}</span><span class="refresh-wrap fade-target" title="${tr("Mise à jour de la page dans 1 min", "Page refreshes in 1 min")}">${refreshPieSvg()}</span> ·
+            <span class="now-date">${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })}</span> · <span class="now-time">${fmtTime(now)}</span> ·
             <span class="now-height">${current ? fmtHeight(current.height) : "—"}</span>
             <span class="trend fade-target">${current ? trendLabel(levels, now) : ""}</span>
           </p>
@@ -1183,7 +1189,7 @@ async function render() {
           ${nextEvents[0] ? ` · ${tr("Prochaine", "Next")} ${tideName(nextEvents[0].type)}${tr(" :", ":")} ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
         <div class="curve-wrap">
-          <div class="curve-center-line" aria-hidden="true"></div>
+          <div class="curve-center-line" aria-hidden="true" style="bottom: ${curve.centerLineBottomPx}px"></div>
           <button class="curve-arrow prev" aria-label="${tr("Jour précédent", "Previous day")}" type="button">‹</button>
           <div class="curve-scroll" data-today-x="${curve.todayX}" data-now-x="${curve.nowX}" data-range-start-ms="${curve.rangeStartMs}" data-px-per-day="${PX_PER_DAY}">
             ${curve.html}
@@ -1276,6 +1282,8 @@ function setupCurveScroll(initialScroll = null, levels = []) {
   const nowDateEl = app.querySelector(".now-date");
   const nowTimeEl = app.querySelector(".now-time");
   const nowHeightEl = app.querySelector(".now-height");
+  const moonIconEl = app.querySelector(".moon-icon-now");
+  const centerLine = app.querySelector(".curve-center-line");
   const fadeTargets = app.querySelectorAll(".fade-target");
 
   // Valeurs réelles telles que rendues côté serveur, pour les restaurer
@@ -1283,6 +1291,7 @@ function setupCurveScroll(initialScroll = null, levels = []) {
   const realDateText = nowDateEl?.textContent ?? "";
   const realTimeText = nowTimeEl?.textContent ?? "";
   const realHeightText = nowHeightEl?.textContent ?? "";
+  const realMoonHtml = moonIconEl?.innerHTML ?? "";
 
   // `.curve-scroll` a un padding horizontal (`--card-pad`) : scrollLeft=0 montre
   // ce padding avant même le début du contenu SVG (coordonnée 0 de nowX/pxPerDay),
@@ -1294,6 +1303,7 @@ function setupCurveScroll(initialScroll = null, levels = []) {
 
   const setScrubUI = (scrubbing) => {
     nowLine?.classList.toggle("scrubbing", scrubbing);
+    centerLine?.classList.toggle("scrubbing", scrubbing);
     fadeTargets.forEach((el) => el.classList.toggle("faded", scrubbing));
     isCurveScrubbing = scrubbing;
   };
@@ -1303,6 +1313,7 @@ function setupCurveScroll(initialScroll = null, levels = []) {
       if (nowDateEl) nowDateEl.textContent = realDateText;
       if (nowTimeEl) nowTimeEl.textContent = realTimeText;
       if (nowHeightEl) nowHeightEl.textContent = realHeightText;
+      if (moonIconEl) moonIconEl.innerHTML = realMoonHtml;
       return;
     }
     const centerX = scrollEl.scrollLeft + scrollEl.clientWidth / 2 - paddingLeft;
@@ -1311,6 +1322,7 @@ function setupCurveScroll(initialScroll = null, levels = []) {
     if (nowDateEl) nowDateEl.textContent = scrubDate.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" });
     if (nowTimeEl) nowTimeEl.textContent = fmtTime(scrubDate);
     if (nowHeightEl) nowHeightEl.textContent = h != null ? fmtHeight(h) : "—";
+    if (moonIconEl) moonIconEl.innerHTML = moonSvg(scrubDate, 22);
   };
 
   // clientWidth peut ne pas refléter la mise en page finale si on le lit dans

@@ -340,17 +340,26 @@ h1 {
 }
 
 /* Repère fixe au centre du viewport (pas du contenu défilant) : reste en
-   place pendant le scroll, la frise défile en dessous. */
+   place pendant le scroll, la frise défile en dessous. S'arrête en bas au
+   même niveau que la bande d'évènement (bottom posé en inline style, cf.
+   curveSvg().centerLineBottomPx) pour ne pas descendre dans les libellés.
+   Discret (30%) au repos sur "maintenant", pleinement visible pendant le
+   défilement. */
 .curve-center-line {
   position: absolute;
   left: 50%;
   top: 0;
-  bottom: 0;
   width: 2px;
   margin-left: -1px;
   background: var(--scrub-orange);
+  opacity: 0.3;
+  transition: opacity 200ms ease;
   z-index: 1;
   pointer-events: none;
+}
+
+.curve-center-line.scrubbing {
+  opacity: 1;
 }
 
 .curve-scroll {

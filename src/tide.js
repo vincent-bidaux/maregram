@@ -34,6 +34,30 @@ export function findCurrentLevel(levels, now = new Date()) {
   return candidate;
 }
 
+/**
+ * Hauteur d'eau interpolée linéairement à un instant arbitraire (utilisé pour
+ * le défilement de la frise : lecture en direct de la hauteur au niveau de la
+ * barre orange centrale). Recherche dichotomique, adaptée à plusieurs
+ * milliers de points sans coût perceptible.
+ */
+export function interpolateLevelAt(levels, at) {
+  if (!levels.length) return null;
+  const t = at.getTime();
+  let lo = 0;
+  let hi = levels.length - 1;
+  if (t <= new Date(levels[lo].time).getTime()) return levels[lo].height;
+  if (t >= new Date(levels[hi].time).getTime()) return levels[hi].height;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (new Date(levels[mid].time).getTime() <= t) lo = mid;
+    else hi = mid;
+  }
+  const t0 = new Date(levels[lo].time).getTime();
+  const t1 = new Date(levels[hi].time).getTime();
+  const ratio = (t - t0) / (t1 - t0);
+  return levels[lo].height + (levels[hi].height - levels[lo].height) * ratio;
+}
+
 export function nextTideEvents(tides, now = new Date(), count = 2) {
   return tides.filter((e) => new Date(e.time) > now).slice(0, count);
 }

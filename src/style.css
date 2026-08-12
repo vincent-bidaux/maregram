@@ -5,6 +5,7 @@
   --text: #eaf4f9;
   --muted: #82a6ba;
   --now-dot: #e2554f;
+  --scrub-orange: #f5a623;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: dark;
 }
@@ -240,6 +241,9 @@ h1 {
   font-size: 1.15rem;
   font-weight: 700;
   margin: 0;
+  /* Chiffres à chasse fixe : la mise à jour en direct pendant le défilement
+     (date/heure/hauteur) ne fait pas bouger latéralement le reste de la ligne. */
+  font-variant-numeric: tabular-nums;
 }
 
 .moon-icon-now {
@@ -303,9 +307,50 @@ h1 {
   font-weight: 400;
 }
 
+/* Défilement de la frise : la date/heure/hauteur du haut basculent dans la
+   même teinte que la barre centrale pendant qu'on scrolle ailleurs qu'à
+   "maintenant", pour signaler qu'on regarde une position survolée. */
+.now-line.scrubbing .now-date,
+.now-line.scrubbing .now-time,
+.now-line.scrubbing .now-height {
+  color: var(--scrub-orange);
+  transition: color 150ms ease;
+}
+
+.now-date,
+.now-time,
+.now-height {
+  transition: color 150ms ease;
+}
+
+/* Éléments qui n'ont de sens qu'au présent : s'estompent pendant le
+   défilement, leur place reste réservée (opacity, pas display). */
+.fade-target {
+  opacity: 1;
+  transition: opacity 150ms ease;
+}
+
+.fade-target.faded {
+  opacity: 0;
+}
+
 .curve-wrap {
   position: relative;
   margin: 1.25rem calc(-1 * var(--card-pad)) 0;
+}
+
+/* Repère fixe au centre du viewport (pas du contenu défilant) : reste en
+   place pendant le scroll, la frise défile en dessous. */
+.curve-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--scrub-orange);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .curve-scroll {

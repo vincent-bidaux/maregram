@@ -3,6 +3,7 @@ import {
   loadStationData,
   loadBeaches,
   findCurrentLevel,
+  interpolateLevelAt,
   nextTideEvents,
   previousTideEvents,
   swimWindows,
@@ -471,7 +472,7 @@ function curveSvg(levels, tides, now, beaches = [], showEvents = true, events = 
   todayStart.setHours(0, 0, 0, 0);
   const todayX = x(todayStart.getTime());
 
-  return { html, totalWidth: w, todayX };
+  return { html, totalWidth: w, todayX, nowX, rangeStartMs: t0 };
 }
 
 function legendHtml(beaches) {
@@ -584,6 +585,10 @@ const INFO_ICON = `
 `;
 
 let settingsOpen = false;
+// true tant qu'on explore la frise ailleurs qu'à "maintenant" : suspend le
+// rafraîchissement périodique pour ne pas interrompre un retour animé vers
+// "Aujourd'hui" ni réinitialiser la position en cours de scrub.
+let isCurveScrubbing = false;
 let openColorPickerId = null;
 
 function colorPaletteHtml(beachId) {
@@ -1158,19 +1163,20 @@ async function render() {
         </div>
         <div class="now-row">
           <p class="now-line">
-            ${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })} · ${fmtTime(now)}<span class="refresh-wrap" title="${tr("Mise à jour de la page dans 1 min", "Page refreshes in 1 min")}">${refreshPieSvg()}</span> ·
-            ${current ? fmtHeight(current.height) : "—"}
-            <span class="trend">${current ? trendLabel(levels, now) : ""}</span>
+            <span class="now-date">${now.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" })}</span> · <span class="now-time">${fmtTime(now)}</span><span class="refresh-wrap fade-target" title="${tr("Mise à jour de la page dans 1 min", "Page refreshes in 1 min")}">${refreshPieSvg()}</span> ·
+            <span class="now-height">${current ? fmtHeight(current.height) : "—"}</span>
+            <span class="trend fade-target">${current ? trendLabel(levels, now) : ""}</span>
           </p>
           <span class="moon-icon-now" title="${tr("Phase lunaire du jour", "Today's moon phase")}">${moonSvg(now, 22)}</span>
         </div>
-        <p class="meta">
+        <p class="meta now-tides fade-target">
           ${prevEvents[0] ? `${tr("Dernière", "Last")} ${tideName(prevEvents[0].type)}${tr(" :", ":")} ${fmtTime(prevEvents[0].time)} (${fmtHeight(prevEvents[0].height)})` : ""}
           ${nextEvents[0] ? ` · ${tr("Prochaine", "Next")} ${tideName(nextEvents[0].type)}${tr(" :", ":")} ${fmtTime(nextEvents[0].time)} (${fmtHeight(nextEvents[0].height)})` : ""}
         </p>
         <div class="curve-wrap">
+          <div class="curve-center-line" aria-hidden="true"></div>
           <button class="curve-arrow prev" aria-label="${tr("Jour précédent", "Previous day")}" type="button">‹</button>
-          <div class="curve-scroll" data-today-x="${curve.todayX}" data-px-per-day="${PX_PER_DAY}">
+          <div class="curve-scroll" data-today-x="${curve.todayX}" data-now-x="${curve.nowX}" data-range-start-ms="${curve.rangeStartMs}" data-px-per-day="${PX_PER_DAY}">
             ${curve.html}
           </div>
           <button class="curve-arrow next" aria-label="${tr("Jour suivant", "Next day")}" type="button">›</button>
@@ -1210,7 +1216,7 @@ async function render() {
       ${settingsPanelHtml(allBeaches)}
     `;
 
-    setupCurveScroll(prevScroll);
+    setupCurveScroll(prevScroll, levels);
     setupSettingsPanel();
     setupBeachCards(openDetailIds);
   } catch (err) {
@@ -1238,17 +1244,71 @@ function setupBeachCards(openDetailIds = new Set()) {
   });
 }
 
-function setupCurveScroll(initialScroll = null) {
+/**
+ * Défilement de la frise centré sur l'instant présent : le point rouge
+ * (nowX) est centré à l'écran au lancement et au clic sur "Aujourd'hui", une
+ * barre orange fixe marque ce centre, et pendant qu'on s'en éloigne, la date/
+ * heure/hauteur en haut de la carte basculent en orange et se mettent à jour
+ * en direct pour refléter la position survolée (lecture interpolée dans
+ * `levels`) — les éléments qui n'ont de sens qu'au présent (icône de
+ * rafraîchissement, tendance, dernière/prochaine marée) s'estompent pendant
+ * ce temps et reviennent au retour sur "Aujourd'hui".
+ */
+function setupCurveScroll(initialScroll = null, levels = []) {
   const scrollEl = app.querySelector(".curve-scroll");
   if (!scrollEl) return;
-  const todayX = parseFloat(scrollEl.dataset.todayX);
+  const nowX = parseFloat(scrollEl.dataset.nowX);
   const pxPerDay = parseFloat(scrollEl.dataset.pxPerDay);
+  const rangeStartMs = parseFloat(scrollEl.dataset.rangeStartMs);
   const prevBtn = app.querySelector(".curve-arrow.prev");
   const nextBtn = app.querySelector(".curve-arrow.next");
   const todayBtn = app.querySelector(".today-btn");
+  const nowLine = app.querySelector(".now-line");
+  const nowDateEl = app.querySelector(".now-date");
+  const nowTimeEl = app.querySelector(".now-time");
+  const nowHeightEl = app.querySelector(".now-height");
+  const fadeTargets = app.querySelectorAll(".fade-target");
 
-  scrollEl.scrollLeft = initialScroll ?? todayX;
-  todayBtn.hidden = Math.abs(scrollEl.scrollLeft - todayX) < 5;
+  // Valeurs réelles telles que rendues côté serveur, pour les restaurer
+  // exactement (pas recalculées) au retour sur "Aujourd'hui".
+  const realDateText = nowDateEl?.textContent ?? "";
+  const realTimeText = nowTimeEl?.textContent ?? "";
+  const realHeightText = nowHeightEl?.textContent ?? "";
+
+  const nowCenterLeft = () => nowX - scrollEl.clientWidth / 2;
+  const isAtNow = () => Math.abs(scrollEl.scrollLeft - nowCenterLeft()) < 5;
+
+  const setScrubUI = (scrubbing) => {
+    nowLine?.classList.toggle("scrubbing", scrubbing);
+    fadeTargets.forEach((el) => el.classList.toggle("faded", scrubbing));
+    isCurveScrubbing = scrubbing;
+  };
+
+  const applyValuesForScroll = () => {
+    if (isAtNow()) {
+      if (nowDateEl) nowDateEl.textContent = realDateText;
+      if (nowTimeEl) nowTimeEl.textContent = realTimeText;
+      if (nowHeightEl) nowHeightEl.textContent = realHeightText;
+      return;
+    }
+    const centerX = scrollEl.scrollLeft + scrollEl.clientWidth / 2;
+    const scrubDate = new Date(rangeStartMs + (centerX / pxPerDay) * 86400000);
+    const h = interpolateLevelAt(levels, scrubDate);
+    if (nowDateEl) nowDateEl.textContent = scrubDate.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" });
+    if (nowTimeEl) nowTimeEl.textContent = fmtTime(scrubDate);
+    if (nowHeightEl) nowHeightEl.textContent = h != null ? fmtHeight(h) : "—";
+  };
+
+  // clientWidth peut ne pas refléter la mise en page finale si on le lit dans
+  // la même tâche synchrone que l'injection du HTML (ex. juste après le tout
+  // premier innerHTML) — on diffère donc le positionnement initial d'une
+  // frame pour être sûr que .curve-scroll a sa largeur définitive.
+  requestAnimationFrame(() => {
+    scrollEl.scrollLeft = initialScroll ?? nowCenterLeft();
+    todayBtn.hidden = isAtNow();
+    setScrubUI(!isAtNow());
+    applyValuesForScroll();
+  });
 
   prevBtn.addEventListener("click", () => {
     scrollEl.scrollBy({ left: -pxPerDay, behavior: "smooth" });
@@ -1257,22 +1317,33 @@ function setupCurveScroll(initialScroll = null) {
     scrollEl.scrollBy({ left: pxPerDay, behavior: "smooth" });
   });
   todayBtn.addEventListener("click", () => {
-    scrollEl.scrollTo({ left: todayX, behavior: "smooth" });
+    scrollEl.scrollTo({ left: nowCenterLeft(), behavior: "smooth" });
   });
+
+  let rafPending = false;
   scrollEl.addEventListener("scroll", () => {
-    todayBtn.hidden = Math.abs(scrollEl.scrollLeft - todayX) < 5;
+    todayBtn.hidden = isAtNow();
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      setScrubUI(!isAtNow());
+      applyValuesForScroll();
+    });
   });
 }
 
 // Rafraîchit l'instant présent (point rouge, statuts, temps restant) sans
 // perdre l'état UI. Timer re-armé à chaque render pour rester synchrone avec
 // l'indicateur visuel ; différé pendant que le panneau de réglages est ouvert
-// pour ne pas casser un drag ou une saisie en cours.
+// (casserait un drag/une saisie) ou que la frise est en cours de scrub
+// (interromprait une animation de retour et redéfinirait "maintenant" sous
+// le doigt de l'utilisateur).
 let refreshTimer = null;
 function scheduleRefresh() {
   clearTimeout(refreshTimer);
   refreshTimer = setTimeout(() => {
-    if (settingsOpen) scheduleRefresh();
+    if (settingsOpen || isCurveScrubbing) scheduleRefresh();
     else render();
   }, REFRESH_INTERVAL_MS);
 }
@@ -1288,7 +1359,7 @@ initSession().then(() => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && !settingsOpen) render();
+  if (!document.hidden && !settingsOpen && !isCurveScrubbing) render();
 });
 
 // PWA hors-ligne (prod uniquement : en dev le SW mettrait en cache les modules Vite)

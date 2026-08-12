@@ -1084,9 +1084,18 @@ function beachStatus(beach, levels, now) {
 
 async function render() {
   const now = new Date();
-  // État UI à préserver quand le re-render vient du rafraîchissement périodique
+  // État UI à préserver quand le re-render vient du rafraîchissement périodique.
+  // Si l'utilisateur était pile sur "maintenant", on garde `prevScroll` à null pour que
+  // setupCurveScroll() recentre sur le nowX frais (sinon le point rouge dérive de la
+  // barre orange à chaque minute qui passe, car sa position avance mais le scroll reste figé).
   const prevScrollEl = app.querySelector(".curve-scroll");
-  const prevScroll = prevScrollEl ? prevScrollEl.scrollLeft : null;
+  let prevScroll = null;
+  if (prevScrollEl) {
+    const oldNowX = parseFloat(prevScrollEl.dataset.nowX);
+    const oldCenterLeft = oldNowX - prevScrollEl.clientWidth / 2;
+    const wasAtNow = Math.abs(prevScrollEl.scrollLeft - oldCenterLeft) < 5;
+    if (!wasAtNow) prevScroll = prevScrollEl.scrollLeft;
+  }
   const openDetailIds = new Set(
     Array.from(app.querySelectorAll(".card.beach"))
       .filter((c) => c.querySelector(".beach-details") && !c.querySelector(".beach-details").hidden)

@@ -26,6 +26,12 @@ Projet personnel, code source ouvert sous licence CC BY-NC-SA 4.0 : libre de
 cloner/modifier/redistribuer en créditant l'auteur et en gardant la même
 licence, mais pas d'usage commercial (voir [LICENSE.md](LICENSE.md)).
 
+## Autre projet dans ce dépôt : Précepteur
+
+Le dossier [`precepteur/`](precepteur/README.md) contient **Précepteur**, une
+plateforme de révision de leçons indépendante (son propre site Netlify, base
+directory `precepteur`). Il n'a aucun effet sur le build de Marégram.
+
 ## Continuer à développer depuis une autre machine
 
 ```bash

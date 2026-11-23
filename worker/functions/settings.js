@@ -1,15 +1,14 @@
 /**
  * Réglages utilisateur côté serveur, sans compte : chaque jeu de réglages est
- * identifié par un token court stocké dans Netlify Blobs. Le token voyage dans
+ * identifié par un token court stocké dans KV (ex-Netlify Blobs). Le token voyage dans
  * l'URL (?token) pour retrouver ses réglages depuis n'importe quel appareil.
  *
  *   GET  /api/settings?token=T  → charge le dossier (met à jour lastSeen)
  *   POST /api/settings          → crée un dossier, renvoie un token unique
  *   PUT  /api/settings?token=T  → écrase name/settings du dossier
  */
-import { getStore } from "@netlify/blobs";
+import { getStore } from "../shared/blobs.js";
 
-export const config = { path: "/api/settings" };
 
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz"; // sans 0/O/1/I/l
 const randToken = (len = 7) => {

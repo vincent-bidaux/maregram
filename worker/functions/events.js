@@ -5,7 +5,6 @@
  */
 import { getEvents } from "../shared/content.js";
 
-export const config = { path: "/api/events" };
 
 export default async (req) => {
   const origin = new URL(req.url).origin;

@@ -7,8 +7,9 @@
  * site déployé, donc toujours à jour après le dernier déploiement.
  */
 import { approxCoefficient } from "../../src/tide.js";
+import { fetchAsset } from "../shared/blobs.js";
+import { getEvents } from "../shared/content.js";
 
-export const config = { path: "/calendar.ics" };
 
 const PARIS = "Europe/Paris";
 
@@ -127,9 +128,10 @@ export default async (req) => {
   const origin = new URL(req.url).origin;
   try {
     const [tides, eventsCfg] = await Promise.all([
-      fetch(`${origin}/data/la-rochelle-pallice/high_low_tides.json`).then((r) => r.json()),
-      fetch(`${origin}/api/events`)
-        .then((r) => r.json())
+      fetchAsset(origin, "/data/la-rochelle-pallice/high_low_tides.json").then((r) => r.json()),
+      // mêmes évènements que /api/events : uniquement les publiés
+      getEvents(origin)
+        .then((cfg) => ({ events: (cfg.events || []).filter((e) => e.published !== false) }))
         .catch(() => ({ events: [] })),
     ]);
     const ics = buildIcs(tides, eventsCfg.events || []);

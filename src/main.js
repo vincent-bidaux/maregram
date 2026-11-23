@@ -1219,7 +1219,7 @@ async function render() {
           ${tr("Infos plages et surveillance :", "Beach and lifeguard info:")} <a href="https://www.larochelle.fr" target="_blank" rel="noopener">larochelle.fr</a>
         </p>
         <p class="footnote">
-          ${tr("Construit avec", "Built with")} <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · ${tr("Hébergé par", "Hosted on")} <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>
+          ${tr("Construit avec", "Built with")} <a href="https://vite.dev" target="_blank" rel="noopener">Vite</a> · ${tr("Hébergé par", "Hosted on")} <a href="https://workers.cloudflare.com" target="_blank" rel="noopener">Cloudflare</a>
         </p>
         <p class="footnote credits-brand">
           ${tr("Édité par", "Published by")} larochelle-today ·

@@ -8,10 +8,9 @@
  *   GET  /api/admin/me                           → { admin, activeUsers, totalUsers }
  *   GET  /api/admin/stats                        → stats détaillées (admin only)
  */
-import { getStore } from "@netlify/blobs";
+import { getStore } from "../shared/blobs.js";
 import { getBeaches, saveBeaches, getEvents, saveEvents } from "../shared/content.js";
 
-export const config = { path: "/api/admin/:action" };
 
 const COOKIE = "admin_session";
 const SESSION_DAYS = 30;

@@ -1,5 +1,5 @@
 /**
- * Réglages utilisateur adossés au serveur (Netlify Blobs via /api/settings),
+ * Réglages utilisateur adossés au serveur (Cloudflare KV via /api/settings),
  * sans compte : un token court identifie le dossier de réglages et voyage dans
  * l'URL (?token) pour le retrouver depuis n'importe quel appareil.
  *

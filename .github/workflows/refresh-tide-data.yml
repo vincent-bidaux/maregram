@@ -1,6 +1,6 @@
 # Rafraîchit les données de marée (fenêtre glissante J±30 d'api-maree.fr)
-# et pousse le commit ; le déploiement est assuré par Netlify, branché sur
-# le repo (auto-build à chaque push sur main).
+# et pousse le commit ; le déploiement est assuré par Cloudflare Workers
+# Builds, branché sur le repo (auto-build à chaque push sur main).
 #
 # Secret requis : API_MAREE_KEY (clé api-maree.fr).
 # NB : après la saison (30 sept. 2026 + 30 j), le script sortira en erreur

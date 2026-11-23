@@ -5,7 +5,6 @@
  */
 import { getBeaches } from "../shared/content.js";
 
-export const config = { path: "/api/beaches" };
 
 export default async (req) => {
   const origin = new URL(req.url).origin;

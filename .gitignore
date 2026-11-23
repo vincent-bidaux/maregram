@@ -4,3 +4,5 @@ dist/
 .netlify/
 __pycache__/
 *.pyc
+.wrangler/
+.dev.vars

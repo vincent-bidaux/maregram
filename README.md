@@ -1,7 +1,7 @@
 # Marégram — Marées La Rochelle
 
-[![Site](https://img.shields.io/badge/site-maregram.netlify.app-5ec4ea)](https://maregram.netlify.app)
-[![Nouveautés](https://img.shields.io/badge/changelog-nouveautés-informational)](https://maregram.netlify.app/nouveautes/)
+[![Site](https://img.shields.io/badge/site-maregram.abpq.cc-5ec4ea)](https://maregram.abpq.cc)
+[![Nouveautés](https://img.shields.io/badge/changelog-nouveautés-informational)](https://maregram.abpq.cc/nouveautes/)
 [![Licence](https://img.shields.io/badge/licence-CC%20BY--NC--SA%204.0-lightgrey)](LICENSE.md)
 
 Dashboard de marées pour La Rochelle et ses plages : marée en cours, courbe de
@@ -10,9 +10,14 @@ il y a assez d'eau pour se baigner, selon un seuil réglable par plage),
 évènements locaux sur la frise, réglages personnels synchronisés en ligne, et
 une console d'administration.
 
-- **Site** : https://maregram.netlify.app
-- **Admin** (protégé par mot de passe) : https://maregram.netlify.app/admin/
-- **Nouveautés (changelog public)** : https://maregram.netlify.app/nouveautes/
+- **Site** : https://maregram.abpq.cc
+- **Admin** (protégé par mot de passe) : https://maregram.abpq.cc/admin/
+- **Nouveautés (changelog public)** : https://maregram.abpq.cc/nouveautes/
+- **Hébergement** : Cloudflare Workers (Worker `maregram`, compte abpq.cc),
+  migré depuis Netlify le 23 novembre 2026. L'ancienne URL
+  `maregram.netlify.app` n'est plus la prod (site Netlify conservé
+  temporairement, à supprimer) : refaire les abonnements iCal / ajouts à
+  l'écran d'accueil avec `maregram.abpq.cc`.
 - **Dépôt GitHub** : `vincent-bidaux/maregram` (public, open source)
 - **Historique** : le projet s'est appelé `maree-la-rochelle` jusqu'au
   renommage du 28 juillet 2026 (dossier local, dépôt GitHub, et site
@@ -34,28 +39,24 @@ cd maregram
 npm install                # seulement si tu veux builder/lancer en local
 ```
 
-C'est tout pour éditer du code et pousser — **Netlify redéploie automatiquement
-à chaque push sur `main`**, aucune commande de déploiement à lancer.
+C'est tout pour éditer du code et pousser — **Cloudflare Workers Builds
+redéploie automatiquement à chaque push sur `main`** (build `npm run build`,
+puis `npx wrangler deploy`), aucune commande de déploiement à lancer.
 
-Pour un aperçu local complet (fonctions serveur, Blobs, réglages, admin) :
+Pour un aperçu local complet (Worker, KV locaux, réglages, admin) : créer un
+fichier `.dev.vars` (jamais commité) avec `ADMIN_USER=…`, `ADMIN_PASSWORD=…`,
+`ADMIN_SECRET=…`, puis :
 
 ```bash
-netlify login               # une fois par machine
-netlify link                 # relie ce dossier au site Netlify existant
+npm run dev:worker          # vite build + wrangler dev (KV locaux, vides au départ)
 ```
 
-Puis créer un fichier `.env` (jamais commité, voir `.env.example`) avec :
+`npm run dev` seul sert le front en direct (Vite, hot reload) mais sans les
+routes serveur (`/api/*`, `/calendar.ics`).
 
-```
-API_MAREE_KEY=<clé api-maree.fr, inscription gratuite sur https://api-maree.fr/register>
-```
-
-Lancer ensuite `netlify dev` (pas `npm run dev` seul, qui ne fait tourner ni
-les fonctions serveur ni Blobs) : ça sert le front en direct (Vite, hot
-reload) + proxy les fonctions `netlify/functions/*`.
-
-`npm run build` puis `npm run preview` sert le build de prod (`dist/`) en
-statique, mais sans les fonctions serveur non plus.
+Pour lancer le script de marées en local, la clé api-maree.fr se met dans
+`.env` (voir `.env.example`, inscription gratuite sur
+https://api-maree.fr/register).
 
 ## Architecture
 
@@ -65,9 +66,12 @@ statique, mais sans les fonctions serveur non plus.
 - `admin/index.html` → `src/admin.js` — console d'administration
 - `nouveautes/index.html` → `src/changelog.js` — changelog public
 
-**Backend** : Netlify Functions (dossier `netlify/functions/`) + **Netlify
-Blobs** pour le stockage serveur (pas de base de données classique, pas de
-compte utilisateur).
+**Backend** : un Worker Cloudflare (`worker/index.js`, config
+`wrangler.jsonc`) qui route les anciennes Netlify Functions (dossier
+`worker/functions/`) et sert le build Vite (`dist/`) en Static Assets.
+Stockage serveur : **Cloudflare KV** (ex-Netlify Blobs, via la couche de
+compatibilité `worker/shared/blobs.js`) — pas de base de données classique,
+pas de compte utilisateur.
 
 ```
 src/
@@ -80,14 +84,17 @@ src/
   i18n.js            FR par défaut, EN si navigateur non-fr, forçable en réglages
   style.css          Tout le CSS (dont les thèmes, cf. plus bas)
 
-netlify/functions/
-  settings.js        /api/settings — réglages utilisateur par token (Blobs)
+worker/index.js      Point d'entrée du Worker (routage /api/*, /calendar.ics, assets)
+worker/functions/
+  settings.js        /api/settings — réglages utilisateur par token (KV)
   admin.js           /api/admin/*  — auth, stats, gestion lieux/évènements
   beaches.js         /api/beaches  — endpoint PUBLIC des lieux publiés
   events.js          /api/events   — endpoint PUBLIC des évènements publiés
   calendar.js        /calendar.ics — flux iCal abonnable (webcal://)
-netlify/shared/
-  content.js          Store Blobs "content" (lieux + évènements), partagé
+worker/shared/
+  blobs.js            getStore() façon Netlify Blobs au-dessus de KV
+                      (store "settings" → SETTINGS_KV, "content" → CONTENT_KV)
+  content.js          Store "content" (lieux + évènements), partagé
                       entre les fonctions publiques et admin
 
 public/data/la-rochelle-pallice/   Données de marée générées (committées)
@@ -102,22 +109,22 @@ scripts/fetch_shom.py              OBSOLÈTE (WAF SHOM), gardé pour référence
 - **Marées** (`water_levels.json`, `high_low_tides.json`) : fichiers JSON
   statiques, committés dans git, régénérés par le script Python. Toujours la
   source de vérité.
-- **Lieux de baignade et évènements** : stockés dans **Netlify Blobs** (store
-  `"content"`), gérés depuis la console admin. Les fichiers
+- **Lieux de baignade et évènements** : stockés dans **Cloudflare KV** (namespace
+  `maregram-content`, ex-store Blobs `"content"`), gérés depuis la console admin. Les fichiers
   `public/config/beaches.json` et `events.json` ne servent qu'à **amorcer**
-  le store Blobs la toute première fois qu'il est lu (s'il n'existe pas
+  le store KV la toute première fois qu'il est lu (s'il n'existe pas
   encore) — **une fois amorcé, éditer ces fichiers JSON n'a plus aucun effet
   en production.** Toute modification de contenu doit passer par `/admin/`.
-- **Réglages utilisateur** (favoris, seuils, nom, thème...) : Netlify Blobs
-  (store `"settings"`), un enregistrement par token court, pas de compte.
+- **Réglages utilisateur** (favoris, seuils, nom, thème...) : Cloudflare KV
+  (namespace `maregram-settings`, ex-store Blobs `"settings"`), un enregistrement par token court, pas de compte.
 
 ## Console admin
 
-Identifiant/mot de passe : variables d'environnement Netlify
-`ADMIN_USER` / `ADMIN_PASSWORD` (**jamais dans le code ni dans git** — les
-consulter avec `netlify env:list` une fois lié au site, ou dans le dashboard
-Netlify du site). `ADMIN_SECRET` sert à signer le cookie de session (HMAC),
-même principe : var d'env Netlify uniquement.
+Identifiant/mot de passe : secrets du Worker Cloudflare `ADMIN_USER` /
+`ADMIN_PASSWORD` (**jamais dans le code ni dans git** — dashboard Cloudflare →
+Workers → maregram → Settings → Variables and Secrets, ou
+`wrangler secret put`). `ADMIN_SECRET` sert à signer le cookie de session
+(HMAC), même principe : secret du Worker uniquement.
 
 Onglets : Stats (utilisateurs actifs/total, table tokens+noms, favoris
 populaires, **aperçu en lecture seule du dashboard d'un utilisateur** via
@@ -131,8 +138,8 @@ token dans l'onglet Stats.
 ## Rafraîchir les données de marée
 
 Automatique : la GitHub Action `.github/workflows/refresh-tide-data.yml`
-relance le fetch lundi et jeudi et pousse le commit ; Netlify redéploie à
-chaque push. Secret GitHub requis : `API_MAREE_KEY`.
+relance le fetch lundi et jeudi et pousse le commit ; Cloudflare Workers
+Builds redéploie à chaque push sur `main`. Secret GitHub requis : `API_MAREE_KEY`.
 
 Manuel si besoin — api-maree.fr ne sert qu'une **fenêtre glissante
 J-30 → J+30**. Le script est cumulatif : il fusionne les nouveaux points avec
@@ -210,11 +217,14 @@ GitHub.
 
 ## Pièges déjà rencontrés (pour ne pas les refaire)
 
-- **Netlify Blobs est *eventually consistent* par défaut en production**
-  (contrairement au bac à sable `netlify dev`, fortement cohérent) : un GET
-  juste après un POST/PUT peut rater l'écriture. Tous les stores Blobs de ce
-  projet (`settings`, `content`) sont ouverts avec `consistency: "strong"`
-  — ne jamais l'enlever.
+- **Cohérence du stockage** : du temps de Netlify, Blobs était *eventually
+  consistent* par défaut et les stores étaient ouverts avec
+  `consistency: "strong"` (option conservée dans le code mais ignorée depuis
+  la migration). Cloudflare KV est lui aussi *eventually consistent* entre
+  datacenters (écriture visible tout de suite dans le datacenter qui l'a
+  faite, jusqu'à ~60 s ailleurs) — sans conséquence pour un utilisateur qui
+  relit ses propres réglages, mais à garder en tête si on ajoute des
+  écritures concurrentes (passer alors sur D1 ou un Durable Object).
 - **Ne jamais muter un tableau source pendant qu'une fonction le relit pour
   en dériver un autre.** Bug réel rencontré dans la gestion admin des lieux :
   une fonction réassignait `active` puis calculait `drafts` via une recherche

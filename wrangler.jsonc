@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "maregram",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/calendar.ics"]
+  },
+  // Ex-stores Netlify Blobs (voir worker/shared/blobs.js)
+  "kv_namespaces": [
+    { "binding": "SETTINGS_KV", "id": "8981a19b10584f408b7ee9edb3b932f3" },
+    { "binding": "CONTENT_KV", "id": "682f9d2735e44735a0354ef87730f101" }
+  ],
+  // Secrets (dashboard Cloudflare / wrangler secret put) : ADMIN_USER, ADMIN_PASSWORD, ADMIN_SECRET
+  "routes": [{ "pattern": "maregram.abpq.cc", "custom_domain": true }],
+  "workers_dev": false,
+  "observability": { "enabled": true }
+}
